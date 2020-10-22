@@ -7,6 +7,7 @@ public class Message
     public Message(int len, byte type, byte[] payload) 
     {
         mLength = len;
+        int test;
         mType = type;
         mPayload = payload;
     }
