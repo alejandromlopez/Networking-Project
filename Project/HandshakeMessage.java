@@ -18,8 +18,4 @@ public class HandshakeMessage {
     public int getPeerID() {
         return peerID;
     }
-
-    public void setZeroBits(String zb) {
-        zeroBits = zb;
-    }
 }
