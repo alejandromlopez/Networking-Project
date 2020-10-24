@@ -22,9 +22,12 @@ public class Main {
             e.printStackTrace();
         }
 
-        // Spawning the peerProcesses in the order of the peerIDs from PeerInfo.cfg
-        for (int key : keys) {
-            peerProcess pp = new peerProcess(key);
-        }
+        // Creates threads for each peerProcess in the order of the peerIDs from PeerInfo.cfg
+        ArrayList<Thread> processes = new ArrayList<Thread>();
+        for (int key : keys) { 
+            Thread t = new Thread(new peerProcess(key));
+            processes.add(t); 
+            t.start(); 
+        } 
     }
 }
