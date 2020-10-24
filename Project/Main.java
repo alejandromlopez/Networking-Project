@@ -22,9 +22,19 @@ public class Main {
             e.printStackTrace();
         }
 
-        // Spawning the peerProcesses in the order of the peerIDs from PeerInfo.cfg
-        for (int key : keys) {
-            peerProcess pp = new peerProcess(key);
-        }
+        // Creates threads for each peerProcess in the order of the peerIDs from PeerInfo.cfg
+        ArrayList<Thread> processes = new ArrayList<Thread>();
+        for (int key : keys) { 
+            Thread t = new Thread(new peerProcess(key));
+            processes.add(t); 
+            t.start(); 
+
+            // Creates the directories for each peerProcess
+            File file = new File(workingDir + "/Project/peer_" + key);
+            if (file.mkdir())
+                System.out.println("Directory created successfully");
+            else 
+                System.out.println("Sorry couldn't create specified directory");
+        } 
     }
 }

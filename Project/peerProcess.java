@@ -1,7 +1,8 @@
 import java.util.Properties;
 import java.io.*;
+import java.nio.file.*;
 
-public class peerProcess {
+public class peerProcess implements Runnable {
     private final int peerID;
     private int numPreferredNeighbors;
     private int unchokingInterval;
@@ -27,15 +28,13 @@ public class peerProcess {
 
         try {
             inStream = new FileInputStream(fileName);
-        } 
-        catch (FileNotFoundException e) {
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
 
         try {
             prop.load(inStream);
-        } 
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -56,25 +55,45 @@ public class peerProcess {
 
         try {
             inStream = new FileInputStream(fileName);
-        } 
-        catch (FileNotFoundException e) {
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
 
         try {
             prop2.load(inStream);
-        } 
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
-        // Initializes this peerProcess' bitField accoriding to the PeerInfo.cfg
+        /*
+            Initializes this peerProcess' bitField accoriding to the PeerInfo.cfg
+            If the peerProcess owns the entire file, then the file is transferred to
+            the corresponding peerProcess' subdirectory
+        */
         String property = prop2.getProperty("" + peerID);
         String bit = property.split(" ")[2];
 
-        if (bit.equals("1"))
+        if (bit.equals("1")) {
             bitField = "1111111111";
-        else
+            moveFile();
+        } else
             bitField = "0000000000";
+    }
+
+    // Moves the file from the current working directory to the specified peerProcess subdirectory
+    private void moveFile() {
+        String workingDir = System.getProperty("user.dir");
+        Path source = new File(workingDir + "/Project/file.txt").toPath();
+        Path dest = new File(workingDir + "/Project/peer_" + peerID + "/file.txt").toPath();
+
+        try {
+            Files.copy(source, dest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void run() {
+        System.out.println("Thread " + Thread.currentThread().getId() + " is running");
     }
 }
