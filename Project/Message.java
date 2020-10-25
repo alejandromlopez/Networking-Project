@@ -1,10 +1,10 @@
 public class Message {
     private final int mLength;
     private final byte mType;
-    private final String mPayload;
+    private final byte[] mPayload;
 
-    public Message(byte type, String payload) {
-        mLength = 1 + payload.getBytes().length;
+    public Message(byte type, byte[] payload) {
+        mLength = 1 + payload.length;
         mType = type;
         mPayload = payload;
     }
@@ -17,7 +17,7 @@ public class Message {
         return mType;
     }
 
-    public String getMPayload() {
+    public byte[] getMPayload() {
         return mPayload;
     }
 }

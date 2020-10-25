@@ -1,14 +1,17 @@
-public class Have {
-    
-    private final int pieceID;
-    private final byte[] pIdxField;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.nio.ByteOrder;
 
-    public Have(int pieceID)
+
+public class Have extends Message{
+
+    public Have(byte[] pieceIDIdk)
     {
-        this.pieceID = pieceID;
-        this.pIdxField = new byte[4];
-        
-        byte temp = (byte)pieceID;
-        this.pIdxField[0] = (temp);
+        super((byte) 4, pieceIDIdk);
     }
+
+    public Have(int pieceID){
+        this(ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt(pieceID).array());
+    }
+    
 }
