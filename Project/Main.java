@@ -23,10 +23,10 @@ public class Main {
         }
 
         // Creates threads for each peerProcess in the order of the peerIDs from PeerInfo.cfg
-        ArrayList<Thread> processes = new ArrayList<Thread>();
-        for (int key : keys) { 
+        ArrayList<Thread> peerProcesses = new ArrayList<Thread>();
+        for (int key: keys) { 
             Thread t = new Thread(new peerProcess(key));
-            processes.add(t); 
+            peerProcesses.add(t); 
             t.start(); 
         } 
     }

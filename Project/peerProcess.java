@@ -20,11 +20,11 @@ public class peerProcess implements Runnable {
     // Starting message delivery
     private void start() {
         String workingDir = System.getProperty("user.dir");
-
+        
         // Creates the subdirectory for the peerProcess
         File file = new File(workingDir + "/Project/peer_" + peerID);
         file.mkdir();
-
+        
         // File path to Common.cfg to read from
         Properties prop = new Properties();
         String fileName = workingDir + "/Project/Common.cfg";
