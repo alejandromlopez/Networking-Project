@@ -29,8 +29,8 @@ CNT4007C Peer-to-Peer network project.
 - [ ] Peer terminates when it finds out that all peers have downloaded the complete file
 
 ### Remote Machine 
-- [ ] Reads file PeerInfo.cfg and starts peers in the file one by one
-- [ ] Terminates after starting all peers
+- [x] Reads file PeerInfo.cfg and starts peers in the file one by one
+- [x] Terminates after starting all peers
 
 ### File Handling
 - [x] Should have subdirectories with 'peer_[peerID]'
