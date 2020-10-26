@@ -1,33 +1,60 @@
 import java.util.Properties;
 import java.io.*;
 import java.nio.file.*;
+import java.nio.*;
+import java.lang.Math;
 
-public class peerProcess implements Runnable {
-    private final int peerID;
-    private int numPreferredNeighbors;
-    private int unchokingInterval;
-    private int optimisticUnchokingInterval;
-    private String fileName;
-    private int fileSize;
-    private int pieceSize;
-    private String bitField;
+public class peerProcess {
+    private static int peerID;
+    private static int numPreferredNeighbors;
+    private static int unchokingInterval;
+    private static int optimisticUnchokingInterval;
+    private static String fileName;
+    private static int fileSize;
+    private static int pieceSize;
+    private static byte[] bitField;
+    private static int numOfPieces;
 
     public peerProcess(int pID) {
         peerID = pID;
-        bitField = "0000000000";
+        computeNumberOfPiece();
+        bitField = new byte[numOfPieces];
+    }
+
+    // Moves the file from the current working directory to the specified peerProcess subdirectory
+    private static void moveFile() {
+        String workingDir = System.getProperty("user.dir");
+        Path source = new File(workingDir + "/file.txt").toPath();
+        Path dest = new File(workingDir + "/peer_" + peerID + "/file.txt").toPath();
+
+        try {
+            Files.copy(source, dest);
+        } catch (FileAlreadyExistsException e1) {
+            System.out.println("File is already in this subdirectory");
+        } catch (Exception e2) {
+            e2.printStackTrace();
+        }
+    }
+
+    // INSERT COMMENT HERE FOR EXPLANATION
+    private void computeNumberOfPiece() {
+        double fSize = fileSize;
+        double pSize = pieceSize;
+        numOfPieces = (int) Math.ceil(fSize/pSize);
     }
 
     // Starting message delivery
-    private void start() {
+    public static void main(String[] args) {
+        peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
         String workingDir = System.getProperty("user.dir");
         
         // Creates the subdirectory for the peerProcess
-        File file = new File(workingDir + "/Project/peer_" + peerID);
+        File file = new File(workingDir + "/peer_" + peerID);
         file.mkdir();
         
         // File path to Common.cfg to read from
         Properties prop = new Properties();
-        String fileName = workingDir + "/Project/Common.cfg";
+        String fileName = workingDir + "/Common.cfg";
         InputStream inStream = null;
 
         try {
@@ -52,7 +79,7 @@ public class peerProcess implements Runnable {
 
         // Reading PeerInfo.cfg to adjust this peerProcess's bitfield
         Properties prop2 = new Properties();
-        fileName = workingDir + "/Project/PeerInfo.cfg";
+        fileName = workingDir + "/PeerInfo.cfg";
         inStream = null;
 
         try {
@@ -68,7 +95,7 @@ public class peerProcess implements Runnable {
         }
 
         /*
-            Initializes this peerProcess' bitField accoriding to the PeerInfo.cfg
+            Initializes this peerProcess' bitField according to the PeerInfo.cfg
             If the peerProcess owns the entire file, then the file is transferred to
             the corresponding peerProcess' subdirectory
         */
@@ -76,29 +103,25 @@ public class peerProcess implements Runnable {
         String bit = property.split(" ")[2];
 
         if (bit.equals("1")) {
-            bitField = "1111111111";
+            int leftover = numOfPieces % 8;
+            int byteNum = 0;
+            for (int i = 0; leftover > i; i++)
+            {
+                byteNum += (int) Math.pow(2, 8-i);
+            }
+
+            for (int i = 0; i < bitField.length; i++)
+            {
+                if ( i == (bitField.length - 1))
+                {
+                    bitField[i] = (byte) byteNum;
+                    continue;
+                }
+
+                bitField[i] = (byte) 255;
+                
+            }
             moveFile();
         }
-    }
-
-    // Moves the file from the current working directory to the specified peerProcess subdirectory
-    private void moveFile() {
-        String workingDir = System.getProperty("user.dir");
-        Path source = new File(workingDir + "/Project/file.txt").toPath();
-        Path dest = new File(workingDir + "/Project/peer_" + peerID + "/file.txt").toPath();
-
-        try {
-            Files.copy(source, dest);
-        } catch (FileAlreadyExistsException e1) {
-            System.out.println("File is already in this subdirectory");
-        } catch (Exception e2) {
-            e2.printStackTrace();
-        }
-    }
-
-    // To run when the thread is spawned
-    public void run() {
-        start();
-        System.out.println("Thread " + Thread.currentThread().getId() + " is running");
     }
 }
