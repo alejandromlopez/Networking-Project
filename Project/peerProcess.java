@@ -1,6 +1,7 @@
 import java.util.Properties;
 import java.io.*;
 import java.nio.file.*;
+import java.lang.Math;
 
 public class peerProcess implements Runnable {
     private final int peerID;
@@ -10,11 +11,13 @@ public class peerProcess implements Runnable {
     private String fileName;
     private int fileSize;
     private int pieceSize;
-    private String bitField;
+    private byte[] bitField;
+    private int numOfPieces;
 
     public peerProcess(int pID) {
         peerID = pID;
-        bitField = "0000000000";
+        computeNumberOfPiece();
+        bitField = new byte[numOfPieces];
     }
 
     // Starting message delivery
@@ -76,7 +79,24 @@ public class peerProcess implements Runnable {
         String bit = property.split(" ")[2];
 
         if (bit.equals("1")) {
-            bitField = "1111111111";
+            int leftover = numOfPieces % 8;
+            int byteNum = 0;
+            for (int i = 0; leftover > i; i++)
+            {
+                byteNum += (int) Math.pow(2, 8-i);
+            }
+
+            for (int i = 0; i < bitField.length; i++)
+            {
+                if ( i == (bitField.length - 1))
+                {
+                    bitField[i] = (byte) byteNum;
+                    continue;
+                }
+
+                bitField[i] = (byte) 255;
+                
+            }
             moveFile();
         }
     }
@@ -100,5 +120,12 @@ public class peerProcess implements Runnable {
     public void run() {
         start();
         System.out.println("Thread " + Thread.currentThread().getId() + " is running");
+    }
+
+    private void computeNumberOfPiece()
+    {
+        double fSize = fileSize;
+        double pSize = pieceSize;
+        numOfPieces = (int) Math.ceil(fSize/pSize);
     }
 }
