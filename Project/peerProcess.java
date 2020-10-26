@@ -1,6 +1,7 @@
 import java.util.Properties;
 import java.io.*;
 import java.nio.file.*;
+import java.nio.*;
 
 public class peerProcess implements Runnable {
     private final int peerID;
