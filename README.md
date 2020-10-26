@@ -10,7 +10,7 @@ CNT4007C Peer-to-Peer network project.
 - [x] have
 - [ ] bitfield
 - [x] request
-- [ ] piece
+- [x] piece
 
 ## Protocols
 - [ ] handshake and bitfield
