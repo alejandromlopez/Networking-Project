@@ -8,7 +8,7 @@ CNT4007C Peer-to-Peer network project.
 - [x] interested
 - [x] not interested
 - [x] have
-- [ ] bitfield
+- [x] bitfield
 - [x] request (maybe)
 - [x] piece (maybe)
 
