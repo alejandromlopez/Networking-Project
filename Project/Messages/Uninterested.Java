@@ -1,3 +1,4 @@
+package Messages;
 
 public class Uninterested extends Message 
 {

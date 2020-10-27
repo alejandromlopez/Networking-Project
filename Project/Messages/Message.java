@@ -1,3 +1,5 @@
+package Messages;
+
 public class Message {
     private int mLength;
     private byte mType;

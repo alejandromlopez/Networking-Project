@@ -1,3 +1,4 @@
+
 /*
  *                     CEN5501C Project2
  * This is the program starting remote processes.
@@ -23,11 +24,10 @@ public class StartRemotePeers {
 	public void getConfiguration()
 	{
 		String st;
-		int i1;
 		peerInfoVector = new Vector<RemotePeerInfo>();
 		try {
 			String workingDir = System.getProperty("user.dir");
-			BufferedReader in = new BufferedReader(new FileReader(workingDir + "/Project/PeerInfo.cfg"));
+			BufferedReader in = new BufferedReader(new FileReader(workingDir + "/PeerInfo.cfg"));
 			while((st = in.readLine()) != null) {
 				
 				 String[] tokens = st.split("\\s+");
@@ -55,19 +55,18 @@ public class StartRemotePeers {
 		try {
 			StartRemotePeers myStart = new StartRemotePeers();
 			myStart.getConfiguration();
-					
+			
 			// get current path
 			String path = System.getProperty("user.dir");
 			
 			// start clients at remote hosts
 			for (int i = 0; i < myStart.peerInfoVector.size(); i++) {
-				System.out.println(i);
 				RemotePeerInfo pInfo = (RemotePeerInfo) myStart.peerInfoVector.elementAt(i);
 				
 				System.out.println("Start remote peer " + pInfo.peerId +  " at " + pInfo.peerAddress );
 				
 				// connects to the remote machines
-				Runtime.getRuntime().exec("ssh " + pInfo.peerAddress + " cd " + path + "; java peerProcess " + pInfo.peerId);
+				Runtime.getRuntime().exec("ssh " + pInfo.peerAddress + " \'cd " + path + "; java peerProcess.java" + pInfo.peerId + "\'");
 			}		
 			System.out.println("Starting all remote peers has done." );
 		}
