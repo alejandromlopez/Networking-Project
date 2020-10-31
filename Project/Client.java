@@ -1,5 +1,3 @@
-package Processes;
-
 import java.net.*;
 import java.io.*;
 
@@ -9,8 +7,6 @@ public class Client {
  	ObjectInputStream in;          //stream read from the socket
 	String message;                //message send to the server
 	String MESSAGE;                //capitalized message read from the server
-
-	public void Client() {}
 
 	void run() {
 		try {

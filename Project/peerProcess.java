@@ -1,33 +1,30 @@
-package Processes;
-
 import java.util.Properties;
 import java.io.*;
 import java.nio.file.*;
 import java.lang.Math;
 
 public class peerProcess {
-    private static int peerID;
-    private static int numPreferredNeighbors;
-    private static int unchokingInterval;
-    private static int optimisticUnchokingInterval;
-    private static String fileName;
-    private static int fileSize;
-    private static int pieceSize;
-    private static byte[] bitField;
-    private static int numOfPieces;
+    private final int peerID;
+    private int numPreferredNeighbors;
+    private int unchokingInterval;
+    private int optimisticUnchokingInterval;
+    private String fileName;
+    private int fileSize;
+    private int pieceSize;
+    private byte[] bitField;
+    private int numOfPieces;
 
     public peerProcess(int pID) {
         peerID = pID;
         computeNumberOfPiece();
         bitField = new byte[numOfPieces];
-        System.out.println("Hello");
+        read();
     }
 
     // Moves the file from the current working directory to the specified peerProcess subdirectory
-    private static void moveFile() {
+    private void moveFile() {
         String workingDir = System.getProperty("user.dir");
-        //Path source = new File(workingDir + "/file.txt").toPath();
-        Path source = new File("../file.txt").toPath();
+        Path source = new File("file.txt").toPath();
         Path dest = new File(workingDir + "/peer_" + peerID + "/file.txt").toPath();
 
         try {
@@ -40,21 +37,20 @@ public class peerProcess {
     }
 
     // Read PeerInfo.cfg and Common.cfg and set all necessary variables and read all necessary data
-    private static void read() {
+    private void read() {
         String workingDir = System.getProperty("user.dir");
         
         // Creates the subdirectory for the peerProcess
-        File file = new File(workingDir + "/peer_" + peerID);
-        file.mkdir();
+        File dir = new File(workingDir + "/peer_" + peerID);
+        dir.mkdir();
         
         // File path to Common.cfg to read from
         Properties prop = new Properties();
-        // String fileName = workingDir + "/Common.cfg";
-        String fileName = "../Common.cfg";
+        String file = workingDir + "/Common.cfg";
         InputStream inStream = null;
 
         try {
-            inStream = new FileInputStream(fileName);
+            inStream = new FileInputStream(file);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -66,6 +62,7 @@ public class peerProcess {
         }
 
         // Initializing variables from Common.cfg
+        // setNumPreferredNeighbors(Integer.parseInt(prop.getProperty("NumberOfPreferredNeighbors")));
         numPreferredNeighbors = Integer.parseInt(prop.getProperty("NumberOfPreferredNeighbors"));
         unchokingInterval = Integer.parseInt(prop.getProperty("UnchokingInterval"));
         optimisticUnchokingInterval = Integer.parseInt(prop.getProperty("OptimisticUnchokingInterval"));
@@ -75,12 +72,11 @@ public class peerProcess {
 
         // Reading PeerInfo.cfg to adjust this peerProcess's bitfield
         Properties prop2 = new Properties();
-        //fileName = workingDir + "/PeerInfo.cfg";
-        fileName = "../PeerInfo.cfg";
+        file = workingDir + "/PeerInfo.cfg";
         inStream = null;
 
         try {
-            inStream = new FileInputStream(fileName);
+            inStream = new FileInputStream(file);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -128,6 +124,5 @@ public class peerProcess {
     // Starting message delivery
     public static void main(String[] args) {
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
-        read();
     }
 }
