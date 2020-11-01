@@ -3,37 +3,45 @@ public class Message {
     private byte mType;
     private byte[] mPayload;
 
-    public Message(byte type, byte[] payload) {
+    public Message(byte type, byte[] payload)
+    {
         mLength = 1 + payload.length;
         mType = type;
         mPayload = payload;
     }
 
-    public Message(byte type){
+    public Message(byte type)
+    {
         mType = type;
     }
 
-    public int getMLength() {
+    public int getMLength()
+    {
         return mLength;
     }
 
-    public void setMLength(int len){
+    public void setMLength(int len)
+    {
         this.mLength = len;
     }
 
-    public byte getMType() {
+    public byte getMType()
+    {
         return mType;
     }
 
-    public void setMType(byte type){
+    public void setMType(byte type)
+    {
         this.mType = type;
     }
 
-    public byte[] getMPayload() {
+    public byte[] getMPayload()
+    {
         return mPayload;
     }
 
-    public void setMPayload(byte[] pl){
+    public void setMPayload(byte[] pl)
+    {
         this.mPayload = pl;
     }
 }
