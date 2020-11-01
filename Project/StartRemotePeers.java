@@ -1,3 +1,4 @@
+
 /*
  *                     CEN5501C Project2
  * This is the program starting remote processes.
@@ -19,23 +20,19 @@ import java.util.*;
 public class StartRemotePeers {
 
 	public Vector<RemotePeerInfo> peerInfoVector;
+	public static String username = "alopez";
 	
 	public void getConfiguration()
 	{
+		// System.out.println("Put your username for cise here on line 23 and comment me out");
 		String st;
-		int i1;
 		peerInfoVector = new Vector<RemotePeerInfo>();
 		try {
 			String workingDir = System.getProperty("user.dir");
-			BufferedReader in = new BufferedReader(new FileReader(workingDir + "/Project/PeerInfo.cfg"));
+			BufferedReader in = new BufferedReader(new FileReader(workingDir + "/PeerInfo.cfg"));
 			while((st = in.readLine()) != null) {
 				
 				 String[] tokens = st.split("\\s+");
-		    	 //System.out.println("tokens begin ----");
-			     //for (int x=0; x<tokens.length; x++) {
-			     //    System.out.println(tokens[x]);
-			     //}
-		         //System.out.println("tokens end ----");
 			    
 			     peerInfoVector.addElement(new RemotePeerInfo(tokens[0], tokens[1], tokens[2]));
 			
@@ -55,20 +52,27 @@ public class StartRemotePeers {
 		try {
 			StartRemotePeers myStart = new StartRemotePeers();
 			myStart.getConfiguration();
-					
-			// get current path
-			String path = System.getProperty("user.dir");
-			
+
 			// start clients at remote hosts
+			ProcessBuilder pb = new ProcessBuilder("/bin/bash");
+
 			for (int i = 0; i < myStart.peerInfoVector.size(); i++) {
-				System.out.println(i);
 				RemotePeerInfo pInfo = (RemotePeerInfo) myStart.peerInfoVector.elementAt(i);
 				
 				System.out.println("Start remote peer " + pInfo.peerId +  " at " + pInfo.peerAddress );
 				
-				// connects to the remote machines
-				Runtime.getRuntime().exec("ssh " + pInfo.peerAddress + " cd " + path + "; java peerProcess " + pInfo.peerId);
-			}		
+				// pb.command("mkdir", "temp" + pInfo.peerId);
+				pb.command("ssh", username + "@" + pInfo.peerAddress, "&&", "cd", "Desktop", "&&", "cd", "temp", "&&", "java", "peerProcess.java", pInfo.peerId);
+				Process p = pb.start();
+				BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				String line;
+				while ((line = reader.readLine()) != null) {
+					System.out.println(line);
+				}
+				
+				int x = p.waitFor();
+				System.out.println(x);
+			}
 			System.out.println("Starting all remote peers has done." );
 		}
 		catch (Exception ex) {
