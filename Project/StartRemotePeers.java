@@ -20,7 +20,7 @@ import java.util.*;
 public class StartRemotePeers {
 
 	public Vector<RemotePeerInfo> peerInfoVector;
-	public static String username = "alopez";
+	public static String username = "cj2";
 	
 	public void getConfiguration()
 	{
