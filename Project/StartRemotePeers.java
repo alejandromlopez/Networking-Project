@@ -20,8 +20,7 @@ import java.util.*;
 public class StartRemotePeers {
 
 	public Vector<RemotePeerInfo> peerInfoVector;
-	private static final String username = "";
-	private static final String password = "";
+	public static String username = "";
 	
 	public void getConfiguration()
 	{
@@ -58,31 +57,26 @@ public class StartRemotePeers {
 		try {
 			StartRemotePeers myStart = new StartRemotePeers();
 			myStart.getConfiguration();
-			
-			// get current path
-			// String path = System.getProperty("user.dir");
-
-			ProcessBuilder pb = new ProcessBuilder( "/bin/bash" );
-			Process p = pb.start();
-			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
 
 			// start clients at remote hosts
+			ProcessBuilder pb = new ProcessBuilder("/bin/bash");
+
 			for (int i = 0; i < myStart.peerInfoVector.size(); i++) {
 				RemotePeerInfo pInfo = (RemotePeerInfo) myStart.peerInfoVector.elementAt(i);
 				
 				System.out.println("Start remote peer " + pInfo.peerId +  " at " + pInfo.peerAddress );
 				
-				// connects to the remote machines
-				// TODO: remove the password and add an ssh key authenticator
-				bw.write("sshpass -p " + password + " ssh " + username + "@" + pInfo.peerAddress + 
-						 "\n cd Desktop/Project/\n java peerProcess.java " + pInfo.peerId + "\n exit\n");
-				bw.flush();
-				// might be able to comment these two lines out
-				// int x = p.waitFor();
-				// System.out.println(x);
-			}		
-			bw.close();
-			p.destroy();
+				pb.command("ssh", username + "@" + pInfo.peerAddress);
+				Process p = pb.start();
+				BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				String line;
+				while ((line = reader.readLine()) != null) {
+					System.out.println(line);
+				}
+				
+				int x = p.waitFor();
+				System.out.println(x);
+			}
 			System.out.println("Starting all remote peers has done." );
 		}
 		catch (Exception ex) {
