@@ -20,11 +20,11 @@ import java.util.*;
 public class StartRemotePeers {
 
 	public Vector<RemotePeerInfo> peerInfoVector;
-	public static String username = "";
+	public static String username = "alopez";
 	
 	public void getConfiguration()
 	{
-		System.out.println("Hey dummy, put your username and passsord for cise here on line 23 and 24 and comment me out");
+		// System.out.println("Put your username for cise here on line 23 and comment me out");
 		String st;
 		peerInfoVector = new Vector<RemotePeerInfo>();
 		try {
@@ -33,11 +33,6 @@ public class StartRemotePeers {
 			while((st = in.readLine()) != null) {
 				
 				 String[] tokens = st.split("\\s+");
-		    	 //System.out.println("tokens begin ----");
-			     //for (int x=0; x<tokens.length; x++) {
-			     //    System.out.println(tokens[x]);
-			     //}
-		         //System.out.println("tokens end ----");
 			    
 			     peerInfoVector.addElement(new RemotePeerInfo(tokens[0], tokens[1], tokens[2]));
 			
@@ -66,7 +61,8 @@ public class StartRemotePeers {
 				
 				System.out.println("Start remote peer " + pInfo.peerId +  " at " + pInfo.peerAddress );
 				
-				pb.command("ssh", username + "@" + pInfo.peerAddress);
+				// pb.command("mkdir", "temp" + pInfo.peerId);
+				pb.command("ssh", username + "@" + pInfo.peerAddress, "&&", "cd", "Desktop", "&&", "cd", "temp", "&&", "java", "peerProcess.java", pInfo.peerId);
 				Process p = pb.start();
 				BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
 				String line;

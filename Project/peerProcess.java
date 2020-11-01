@@ -2,6 +2,7 @@ import java.util.Properties;
 import java.io.*;
 import java.nio.file.*;
 import java.lang.Math;
+import java.util.*;
 
 public class peerProcess {
     private final int peerID;
@@ -62,7 +63,6 @@ public class peerProcess {
         }
 
         // Initializing variables from Common.cfg
-        // setNumPreferredNeighbors(Integer.parseInt(prop.getProperty("NumberOfPreferredNeighbors")));
         numPreferredNeighbors = Integer.parseInt(prop.getProperty("NumberOfPreferredNeighbors"));
         unchokingInterval = Integer.parseInt(prop.getProperty("UnchokingInterval"));
         optimisticUnchokingInterval = Integer.parseInt(prop.getProperty("OptimisticUnchokingInterval"));
