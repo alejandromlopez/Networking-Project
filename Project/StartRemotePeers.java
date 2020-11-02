@@ -18,7 +18,7 @@ public class StartRemotePeers {
 
 		try {
 			String workingDir = System.getProperty("user.dir");
-			BufferedReader in = new BufferedReader(new FileReader(workingDir + "/PeerInfo.cfg"));
+			BufferedReader in = new BufferedReader(new FileReader(workingDir + "/Protocol/PeerInfo.cfg"));
 			while((st = in.readLine()) != null) {
 				
 				 String[] tokens = st.split("\\s+");
@@ -41,6 +41,7 @@ public class StartRemotePeers {
 			StartRemotePeers myStart = new StartRemotePeers();
 			myStart.getConfiguration();
 			String workingDir = "Desktop/Protocol";
+
 			// start clients at remote hosts
 			for (int i = 0; i < myStart.peerInfoVector.size(); i++) {
 				RemotePeerInfo pInfo = (RemotePeerInfo) myStart.peerInfoVector.elementAt(i);
