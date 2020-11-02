@@ -1,8 +1,9 @@
+package Protocol;
+
 import java.util.Properties;
 import java.io.*;
 import java.nio.file.*;
 import java.lang.Math;
-import java.util.*;
 
 public class peerProcess {
     private final int peerID;
@@ -19,7 +20,7 @@ public class peerProcess {
         peerID = pID;
         computeNumberOfPiece();
         bitField = new byte[numOfPieces];
-        read();
+        initialize();
     }
 
     // Moves the file from the current working directory to the specified peerProcess subdirectory
@@ -38,7 +39,7 @@ public class peerProcess {
     }
 
     // Read PeerInfo.cfg and Common.cfg and set all necessary variables and read all necessary data
-    private void read() {
+    private void initialize() {
         String workingDir = System.getProperty("user.dir");
         
         // Creates the subdirectory for the peerProcess
@@ -70,6 +71,13 @@ public class peerProcess {
         fileSize = Integer.parseInt(prop.getProperty("FileSize"));
         pieceSize = Integer.parseInt(prop.getProperty("PieceSize"));
 
+        System.out.println(numPreferredNeighbors);
+        System.out.println(unchokingInterval);
+        System.out.println(optimisticUnchokingInterval);
+        System.out.println(fileName);
+        System.out.println(fileSize);
+        System.out.println(pieceSize);
+
         // Reading PeerInfo.cfg to adjust this peerProcess's bitfield
         Properties prop2 = new Properties();
         file = workingDir + "/PeerInfo.cfg";
@@ -88,9 +96,9 @@ public class peerProcess {
         }
 
         /*
-            Initializes this peerProcess' bitField according to the PeerInfo.cfg
+            Initializes this peerProcess' bitField according to the PeerInfo.cfg.
             If the peerProcess owns the entire file, then the file is transferred to
-            the corresponding peerProcess' subdirectory
+            the corresponding peerProcess' subdirectory.
         */
         String property = prop2.getProperty("" + peerID);
         String bit = property.split(" ")[2];
@@ -121,8 +129,13 @@ public class peerProcess {
         numOfPieces = (int) Math.ceil(fSize/pSize);
     }
 
-    // Starting message delivery
+    private void startProtocol() {
+
+    }
+
+    // Startes up the peerProcess and begins message delivery
     public static void main(String[] args) {
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
+        pp.startProtocol();
     }
 }
