@@ -1,47 +1,43 @@
+
 import java.net.*;
 import java.io.*;
 
 public class Client {
-	Socket requestSocket;           //socket connect to the server
-	ObjectOutputStream out;         //stream write to the socket
- 	ObjectInputStream in;          //stream read from the socket
-	String message;                //message send to the server
-	String MESSAGE;                //capitalized message read from the server
+	Socket requestSocket;           // socket connect to the server
+	ObjectOutputStream out;         // stream write to the socket
+ 	ObjectInputStream in;           // stream read from the socket
+	String message;                 // message send to the server
+	String inMessage;			    // received message fromt the server
 
-	void run() {
+	public void run() {
 		try {
-			//create a socket to connect to the server
-			requestSocket = new Socket("localhost", 8000);
-			System.out.println("Connected to localhost in port 8000");
-			//initialize inputStream and outputStream
+			// create a socket to connect to the server
+			requestSocket = new Socket("localhost", 1313);
+			System.out.println("Connected to localhost in port 1313");
+			// initialize inputStream and outputStream
 			out = new ObjectOutputStream(requestSocket.getOutputStream());
 			out.flush();
 			in = new ObjectInputStream(requestSocket.getInputStream());
 			
-			//get Input from standard input
-			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
 			while(true) {
-				System.out.print("Hello, please input a sentence: ");
-				//read a sentence from the standard input
-				message = bufferedReader.readLine();
-				//Send the sentence to the server
+				// send the message to the server
 				sendMessage(message);
-				//Receive the upperCase sentence from the server
-				MESSAGE = (String)in.readObject();
-				//show the message to the user
-				System.out.println("Receive message: " + MESSAGE);
+				// receive the message from the server
+				inMessage = (String)in.readObject();
+				// show the message to the user
+				System.out.println("Receive message: " + inMessage);
 			}
+
 		} catch (ConnectException e) {
-    			System.err.println("Connection refused. You need to initiate a server first.");
+    		System.err.println("Connection refused. You need to initiate a server first.");
 		} catch ( ClassNotFoundException e ) {
-            		System.err.println("Class not found");
+    		System.err.println("Class not found");
         } catch(UnknownHostException unknownHost) {
 			System.err.println("You are trying to connect to an unknown host!");
-		}
-		catch(IOException ioException) {
+		} catch(IOException ioException) {
 			ioException.printStackTrace();
 		} finally {
-			//Close connections
+			// close connections
 			try {
 				in.close();
 				out.close();
@@ -51,17 +47,19 @@ public class Client {
 			}
 		}
 	}
-	//send a message to the output stream
+
+	// send a message to the output stream
 	void sendMessage(String msg) {
 		try {
-			//stream write the message
+			// stream write the message
 			out.writeObject(msg);
 			out.flush();
 		} catch(IOException ioException) {
 			ioException.printStackTrace();
 		}
 	}
-	//main method
+
+	// main method
 	public static void main(String args[]) {
 		Client client = new Client();
 		client.run();
