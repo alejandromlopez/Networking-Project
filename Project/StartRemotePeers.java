@@ -8,7 +8,8 @@ import java.util.*;
 public class StartRemotePeers {
 
 	private Vector<RemotePeerInfo> peerInfoVector;
-	private static final String username = "cj2";
+
+	private static final String username = "";
 	
 	public void getConfiguration()
 	{

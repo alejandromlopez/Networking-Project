@@ -1,89 +1,96 @@
 
-import java.net.*;
 import java.io.*;
+import java.net.*;
 
-public class Server {
-	private static final int sPort = 1313; 		// the server will be listening on this port number
+public class Server extends Thread {
+    private final int lPort;
+    private ServerSocket serverSocket;
 
-	public static void main(String[] args) throws Exception {
-		System.out.println("The server is running."); 
-        ServerSocket listener = new ServerSocket(sPort);
-		int clientNum = 1;
+    public Server(int port) {
+        lPort = port;
+    }
 
-		// listening loop for incoming messages
-		try {
-			while(true) {
-				new Handler(listener.accept(), clientNum).start();
-				System.out.println("Client "  + clientNum + " is connected!");
-				clientNum++;
+    public void run() {
+        try {
+            serverSocket = new ServerSocket(lPort) ;
+            System.out.println("Server is listening on port " + lPort);
+            int num = 1;
+    
+            while (true) {
+                try {
+                    Socket socket = serverSocket.accept();
+                    System.out.println("New client connected");
+                    new Handler(socket, num).start();
+                } catch (IOException e) {
+					e.printStackTrace();
+				}
+                
+                System.out.println("Client " + num + " is connected");
+                num++;
+            }
+    
+        } catch (IOException ex) {
+            System.out.println("Server exception: " + ex.getMessage());
+            ex.printStackTrace();
+        } finally {
+			try {
+				serverSocket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-		} finally {
-				listener.close();
 		} 
     }
 
-	/**
-     	* A handler thread class.  Handlers are spawned from the listening
-     	* loop and are responsible for dealing with a single client's requests.
-	*/
-	private static class Handler extends Thread {
-		private String message;    				// message received from the client
-		private String outMessage;    			// message send to the client
-		private Socket connection;				// connedtion socket
-		private ObjectInputStream in;			// stream read from the socket
-		private ObjectOutputStream out;   		// stream write to the socket
-		private int no;							// the index number of the client
+    public class Handler extends Thread {  
+        private final Socket socket;
+        private final int num;
+        private ObjectOutputStream output; 
+        private ObjectInputStream input;  
+        private String message;
 
-		public Handler(Socket connection, int no) {
-			this.connection = connection;
-			this.no = no;
-		}
+        public Handler(Socket s, int n) {
+            socket = s;
+            num = n;
+        }
 
-		public void run() {
-			try {
-				// initialize Input and Output streams
-				out = new ObjectOutputStream(connection.getOutputStream());
-				out.flush();
-				in = new ObjectInputStream(connection.getInputStream());
+        private void sendMessage(String message) {
+            try {
+				output.writeObject(message);
+				output.flush();
+				System.out.println("Send message: " + message + " to Client " + num);
+			} catch(IOException ioException) {
+				ioException.printStackTrace();
+			}
+        }
 
-				try {
+        public void run() {
+            try {
+                output = new ObjectOutputStream(socket.getOutputStream());
+                output.flush();
+                input = new ObjectInputStream(socket.getInputStream());
+
+                try {
 					while(true) {
-						// receive the message sent from the client
-						message = (String)in.readObject();
-						// show the message to the user
-						System.out.println("Receive message: " + message + " from client " + no);
-						// TODO: change the following line so that it is more productive
-						outMessage = message;
-						// send outMessage back to the client
-						sendMessage(outMessage);
+						message = (String)input.readObject();
+						System.out.println("Receive message: " + message + " from client " + num);
+						sendMessage("I also say: " + message);
 					}
 				} catch(ClassNotFoundException classnot){
 						System.err.println("Data received in unknown format");
 				}
 			} catch(IOException ioException){
-					System.out.println("Disconnect with Client " + no);
+					System.out.println("Disconnect with Client " + num);
 			} finally {
 				// close connections
 				try {
-					in.close();
-					out.close();
-					connection.close();
+					input.close();
+					output.close();
+					socket.close();
 				}
 				catch(IOException ioException){
-					System.out.println("Disconnect with Client " + no);
+					System.out.println("Disconnect with Client " + num);
 				}
 			}
-		}
-
-		// send a message to the output stream
-		public void sendMessage(String msg) {
-			try {
-				out.writeObject(msg);
-				out.flush();
-				System.out.println("Send message: " + msg + " to Client " + no);
-			} catch(IOException ioException) {
-				ioException.printStackTrace();
-			}
-		}
+        }
     }
 }

@@ -2,67 +2,48 @@
 import java.net.*;
 import java.io.*;
 
-public class Client {
-	Socket requestSocket;           // socket connect to the server
-	ObjectOutputStream out;         // stream write to the socket
- 	ObjectInputStream in;           // stream read from the socket
-	String message;                 // message send to the server
-	String inMessage;			    // received message fromt the server
+public class Client implements Runnable {
+    private ObjectInputStream input;
+    private ObjectOutputStream output;
+    private Socket socket;
+    private final String hostname;
+    private final int sPort;
 
-	public void run() {
-		try {
-			// create a socket to connect to the server
-			requestSocket = new Socket("localhost", 1313);
-			System.out.println("Connected to localhost in port 1313");
-			// initialize inputStream and outputStream
-			out = new ObjectOutputStream(requestSocket.getOutputStream());
-			out.flush();
-			in = new ObjectInputStream(requestSocket.getInputStream());
-			
-			while(true) {
-				// send the message to the server
-				sendMessage(message);
-				// receive the message from the server
-				inMessage = (String)in.readObject();
-				// show the message to the user
-				System.out.println("Receive message: " + inMessage);
-			}
+    public Client(String host, int port) {
+        hostname = host;
+        sPort = port;
+    }
 
-		} catch (ConnectException e) {
-    		System.err.println("Connection refused. You need to initiate a server first.");
-		} catch ( ClassNotFoundException e ) {
-    		System.err.println("Class not found");
-        } catch(UnknownHostException unknownHost) {
-			System.err.println("You are trying to connect to an unknown host!");
-		} catch(IOException ioException) {
-			ioException.printStackTrace();
-		} finally {
-			// close connections
-			try {
-				in.close();
-				out.close();
-				requestSocket.close();
+    public void run() {
+        try {
+            socket = new Socket(hostname, sPort);
+            input = new ObjectInputStream(socket.getInputStream());
+
+            output = new ObjectOutputStream(socket.getOutputStream());
+            output.flush();
+ 
+            String line = "This is a temporary message";
+ 
+            System.out.println("Client sent: " + line);
+            output.writeObject(line);
+
+            String in = (String)input.readObject();
+            System.out.println("Client received: " + in);
+
+        } catch (UnknownHostException ex) {
+            System.out.println("Server not found: " + ex.getMessage());
+        } catch (IOException ex) {
+            System.out.println("I/O error: " + ex.getMessage());
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+				input.close();
+				output.close();
+				socket.close();
 			} catch(IOException ioException) {
 				ioException.printStackTrace();
 			}
-		}
-	}
-
-	// send a message to the output stream
-	void sendMessage(String msg) {
-		try {
-			// stream write the message
-			out.writeObject(msg);
-			out.flush();
-		} catch(IOException ioException) {
-			ioException.printStackTrace();
-		}
-	}
-
-	// main method
-	public static void main(String args[]) {
-		Client client = new Client();
-		client.run();
-	}
-
+        }
+    }
 }

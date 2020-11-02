@@ -1,11 +1,8 @@
 
-
 import java.util.Properties;
 import java.io.*;
 import java.nio.file.*;
 import java.lang.Math;
-import java.util.Collection;
-import java.util.LinkedList;
 
 public class peerProcess {
     private final int peerID;
@@ -17,6 +14,9 @@ public class peerProcess {
     private int pieceSize;
     private byte[] bitField;
     private int numOfPieces;
+
+    private int portNum;
+
 
     public peerProcess(int pID) {
         peerID = pID;
@@ -105,6 +105,9 @@ public class peerProcess {
         String property = prop2.getProperty("" + peerID);
         String bit = property.split(" ")[2];
 
+        portNum = Integer.parseInt(property.split(" ")[1]);
+
+
         if (bit.equals("1")) {
             int leftover = numOfPieces % 8;
             int byteNum = 0;
@@ -124,20 +127,27 @@ public class peerProcess {
         }
     }
 
-    // INSERT COMMENT HERE FOR EXPLANATION
+
+    // TODO: INSERT COMMENT HERE FOR EXPLANATION
+
     private void computeNumberOfPiece() {
         double fSize = fileSize;
         double pSize = pieceSize;
         numOfPieces = (int) Math.ceil(fSize/pSize);
     }
 
-    private void startProtocol(int peerid) {
-        
-    }
 
+    private void startProtocol() {
+        Thread server = new Thread(new Server(portNum));
+        Thread client = new Thread(new Client("localhost", portNum));
+
+        server.start();
+        client.start();
+    }
+    
     // Startes up the peerProcess and begins message delivery
     public static void main(String[] args) {
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
-        pp.startProtocol(Integer.parseInt(args[0]));
+        pp.startProtocol();
     }
 }
