@@ -8,8 +8,7 @@ import java.util.*;
 public class StartRemotePeers {
 
 	private Vector<RemotePeerInfo> peerInfoVector;
-	private static final String username = "";
-	private static final String workingDir = "Desktop/Protocol";
+	private static final String username = "alopez";
 	
 	public void getConfiguration()
 	{
@@ -41,6 +40,7 @@ public class StartRemotePeers {
 		try {
 			StartRemotePeers myStart = new StartRemotePeers();
 			myStart.getConfiguration();
+			String workingDir = "Desktop/Protocol";
 
 			// start clients at remote hosts
 			for (int i = 0; i < myStart.peerInfoVector.size(); i++) {
