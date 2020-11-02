@@ -18,7 +18,7 @@ public class StartRemotePeers {
 
 		try {
 			String workingDir = System.getProperty("user.dir");
-			BufferedReader in = new BufferedReader(new FileReader(workingDir + "/Protocol/PeerInfo.cfg"));
+			BufferedReader in = new BufferedReader(new FileReader(workingDir + "/PeerInfo.cfg"));
 			while((st = in.readLine()) != null) {
 				
 				 String[] tokens = st.split("\\s+");
