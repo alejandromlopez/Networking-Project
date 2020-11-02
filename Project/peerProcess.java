@@ -1,9 +1,11 @@
-package Protocol;
+
 
 import java.util.Properties;
 import java.io.*;
 import java.nio.file.*;
 import java.lang.Math;
+import java.util.Collection;
+import java.util.LinkedList;
 
 public class peerProcess {
     private final int peerID;
@@ -129,13 +131,13 @@ public class peerProcess {
         numOfPieces = (int) Math.ceil(fSize/pSize);
     }
 
-    private void startProtocol() {
-
+    private void startProtocol(int peerid) {
+        
     }
 
     // Startes up the peerProcess and begins message delivery
     public static void main(String[] args) {
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
-        pp.startProtocol();
+        pp.startProtocol(Integer.parseInt(args[0]));
     }
 }
