@@ -1,4 +1,4 @@
-package ProjectPackage;
+
 
 public class HandshakeMessage {
     private final String handshakeHeader = "P2PFILESHARINGPROJ";

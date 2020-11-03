@@ -1,4 +1,4 @@
-package ProjectPackage;
+
 
 public class Uninterested extends Message 
 {
