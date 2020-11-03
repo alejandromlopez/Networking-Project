@@ -1,3 +1,5 @@
+
+
 import java.text.SimpleDateFormat;  
 import java.util.Date;  
 import java.io.FileWriter;
@@ -162,7 +164,8 @@ public class EventLog {
     }
 
     public void receivingHave(int peerID, int pieceIdx){
-        final String msg = getHeader() + " received the 'have' message from " + peerID + " for the piece " + pieceIdx;
+        final String msg = getHeader() + " received the 'have' message from " + peerID 
+                                       + " for the piece " + pieceIdx;
         try 
         {
             logger.write(msg);
