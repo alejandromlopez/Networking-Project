@@ -142,10 +142,38 @@ public class peerProcess {
     }
 
     private void createSocket(){
+        System.out.println("Starting createSocket");
+        String workingDir = System.getProperty("user.dir");
         boolean bool = false;
-
+        Scanner s = null;
+        try {
+            s = new Scanner(new File(workingDir + "/PeerInfo.cfg"));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
         while(bool){
-            System.out.println("");
+            System.out.println("First While");
+            String line = s.nextLine();
+            firstID = Integer.parseInt(line.split(" ")[0]);
+            Socket socket = null;
+            Server server = null;
+            Thread sThread = null;
+            System.out.println("Created Threads and Servers");
+
+            while (s.hasNext()) {
+                server = new Server(portNum);
+                sThread = new Thread(server);
+                byte[] a;
+                do{
+                    try {
+                        s = new Scanner(new File(workingDir + "/PeerInfo.cfg"));
+                        System.out.println("Try");
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                } while (bool);
+                System.out.println("Finished");
+            }
         }
     }
 
