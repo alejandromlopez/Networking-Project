@@ -1,5 +1,3 @@
-package Messages;
-
 public class Interested extends Message 
 {
     public void Interested()

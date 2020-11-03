@@ -1,30 +1,43 @@
 import java.net.*;
 import java.io.*;
 
-public class Client implements Runnable {
+public class Client extends Thread {
     private ObjectInputStream input;
     private ObjectOutputStream output;
     private Socket socket;
     private final String hostname;
-    private final int sPort;
+    private final int port;
+    private String message;
 
-    public Client(String host, int port) {
-        hostname = host;
-        sPort = port;
+    public Client(String h, int p) {
+        hostname = h;
+        port = p;
+    }
+
+    public void sendMessage() {
+        try {
+            output = new ObjectOutputStream(socket.getOutputStream());
+            output.flush();
+ 
+            output.writeObject(message);
+            output.flush();
+
+            System.out.println("Send message: " + message + " to Server ");
+        } catch(IOException ioException) {
+            ioException.printStackTrace();
+        }
+    }
+
+    public void setMessage(String m) {
+        message = m;
     }
 
     public void run() {
         try {
-            socket = new Socket(hostname, sPort);
+            socket = new Socket(hostname, port);
             input = new ObjectInputStream(socket.getInputStream());
-
-            output = new ObjectOutputStream(socket.getOutputStream());
-            output.flush();
- 
-            String line = "This is a temporary message";
- 
-            System.out.println("Client sent: " + line);
-            output.writeObject(line);
+            sendMessage();
+            System.out.println("Client sent: " + message);
 
             String in = (String)input.readObject();
             System.out.println("Client received: " + in);
@@ -35,14 +48,15 @@ public class Client implements Runnable {
             System.out.println("I/O error: " + ex.getMessage());
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
-        } finally {
-            try {
-				input.close();
-				output.close();
-				socket.close();
-			} catch(IOException ioException) {
-				ioException.printStackTrace();
-			}
-        }
+        } 
+        // finally {
+        //     try {
+		// 		input.close();
+		// 		output.close();
+		// 		socket.close();
+		// 	} catch(IOException ioException) {
+		// 		ioException.printStackTrace();
+		// 	}
+        // }
     }
 }

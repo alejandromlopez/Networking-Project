@@ -1,5 +1,3 @@
-package Messages;
-
 public class Choke extends Message 
 {
     public void Choke()
