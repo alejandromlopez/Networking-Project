@@ -15,7 +15,10 @@ public class Have extends Message
 
     public Have(int pieceID) 
     {
-        this(ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt(pieceID).array(), pieceID);
+        this(ByteBuffer.allocate(4)
+                       .order(ByteOrder.BIG_ENDIAN)
+                       .putInt(pieceID)
+                       .array(), pieceID);
     }
     
     public int getPieceIdx()

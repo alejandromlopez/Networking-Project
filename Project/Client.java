@@ -24,7 +24,8 @@ public class Client extends Thread {
             output.writeObject(message);
             output.flush();
 
-            System.out.println("Send message: " + message + " to Server ");
+            System.out.println("Send message: " + message 
+                               + " to Server ");
         } catch(IOException ioException) {
             ioException.printStackTrace();
         }
@@ -51,14 +52,18 @@ public class Client extends Thread {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         } 
-        // finally {
-        //     try {
-		// 		input.close();
-		// 		output.close();
-		// 		socket.close();
-		// 	} catch(IOException ioException) {
-		// 		ioException.printStackTrace();
-		// 	}
-        // }
+        
+        finally {
+            boolean a = true;
+            if (!a){
+                 try {
+		 	    	input.close();
+		 	    	output.close();
+		 	    	socket.close();
+		 	    } catch(IOException ioException) {
+		 	    	ioException.printStackTrace();
+                }
+            }
+         }
     }
 }

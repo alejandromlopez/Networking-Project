@@ -134,12 +134,19 @@ public class peerProcess {
     }
 
 
-    // TODO: INSERT COMMENT HERE FOR EXPLANATION
-
+    // Computes the number of Pieces of the given file
     private void computeNumberOfPiece() {
         double fSize = fileSize;
         double pSize = pieceSize;
         numOfPieces = (int) Math.ceil(fSize / pSize);
+    }
+
+    private void createSocket(){
+        boolean bool = false;
+
+        while(bool){
+            System.out.println("");
+        }
     }
 
 

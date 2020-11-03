@@ -49,9 +49,13 @@ public class StartRemotePeers {
 			for (int i = 0; i < myStart.peerInfoVector.size(); i++) {
 				RemotePeerInfo pInfo = (RemotePeerInfo) myStart.peerInfoVector.elementAt(i);
 				
-				System.out.println("Start remote peer " + pInfo.peerId +  " at " + pInfo.peerAddress );
+				System.out.println("Start remote peer " + pInfo.peerId 
+								   + " at " + pInfo.peerAddress);
 
-				Runtime.getRuntime().exec("ssh " + username + "@" + pInfo.peerAddress + " && cd " + workingDir + " && java peerProcess " + pInfo.peerId);
+				Runtime.getRuntime().exec("ssh " + username 
+										  + "@" + pInfo.peerAddress 
+										  + " && cd " + workingDir 
+										  + " && java peerProcess " + pInfo.peerId);
 			}
 			System.out.println("Starting all remote peers has done." );
 		} catch (Exception ex) {
