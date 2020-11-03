@@ -6,7 +6,8 @@ authentication set up for SSH. If this is not set up the SSH for the machines wi
 ask for passwords. Also, in StartRemotePeers.java, change line 11 to include your 
 username for the CISE machines. Finally, transfer this Project directory into the 
 remote machines using SFTP. Make sure that the name of the directory is "Project"
-on the remote machine.
+on the remote machine. To begin run ./compileJava in the working directory. 
+Then you can run java StartRemotePeers.
 
 ## Message Payloads
 - [x] choke 
