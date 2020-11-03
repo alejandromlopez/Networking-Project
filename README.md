@@ -1,9 +1,12 @@
 # Networking-Project
 
-CNT4007C Peer-to-Peer network project. To ensure that this project runs, it requires
-you to have a public and private key authentication set up for SSH. If this is not
-set up the SSH for the machines will ask for passwords. Also, in StartRemotePeers.java,
-change line 11 to include your username for the CISE machines.
+CNT4007C Peer-to-Peer network project. 
+To ensure that this project runs, it requires you to have a public and private key 
+authentication set up for SSH. If this is not set up the SSH for the machines will 
+ask for passwords. Also, in StartRemotePeers.java, change line 11 to include your 
+username for the CISE machines. Finally, transfer this Project directory into the 
+remote machines using SFTP. Make sure that the name of the directory is "Project"
+on the remote machine.
 
 ## Message Payloads
 - [x] choke 
