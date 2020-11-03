@@ -4,7 +4,7 @@ public class Choke extends Message
 {
     public void Choke()
     {
-        this.setMType() = 0;
-        this.setMPayload = null;
+        this.setMType((byte) 0);
+        this.setMPayload(null);
     }
 }
