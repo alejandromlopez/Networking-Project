@@ -1,3 +1,4 @@
+
 import java.util.Properties;
 import java.util.Scanner;
 import java.io.*;
@@ -15,8 +16,10 @@ public class peerProcess {
     private int pieceSize;
     private byte[] bitField;
     private int numOfPieces;
+
     private int portNum;
     private int firstID;
+
 
     public peerProcess(int pID) {
         peerID = pID;
@@ -106,7 +109,9 @@ public class peerProcess {
          */
         String property = prop2.getProperty("" + peerID);
         String bit = property.split(" ")[2];
+
         portNum = Integer.parseInt(property.split(" ")[1]);
+
 
         if (bit.equals("1")) {
             int leftover = numOfPieces % 8;
@@ -127,12 +132,15 @@ public class peerProcess {
         }
     }
 
+
     // TODO: INSERT COMMENT HERE FOR EXPLANATION
+
     private void computeNumberOfPiece() {
         double fSize = fileSize;
         double pSize = pieceSize;
         numOfPieces = (int) Math.ceil(fSize / pSize);
     }
+
 
     private void startProtocol() {
         String workingDir = System.getProperty("user.dir");
