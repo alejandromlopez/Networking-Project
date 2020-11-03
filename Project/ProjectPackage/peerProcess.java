@@ -150,8 +150,5 @@ public class peerProcess {
     public static void main(String[] args) {
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
         pp.startProtocol();
-        byte[] a = {(byte)2};
-        Message m = new Message((byte)2, a);
-        m.write(o);
     }
 }
