@@ -58,7 +58,8 @@ public class Server extends Thread {
             try {
 				output.writeObject(message);
 				output.flush();
-				System.out.println("Send message: " + message + " to Client " + num);
+                System.out.println("Send message: " + message 
+                                   + " to Client " + num);
 			} catch(IOException ioException) {
 				ioException.printStackTrace();
 			}
@@ -73,7 +74,8 @@ public class Server extends Thread {
                 try {
 					while(true) {
 						message = (String)input.readObject();
-						System.out.println("Receive message: " + message + " from client " + num);
+                        System.out.println("Receive message: " + message 
+                                           + " from client " + num);
 						sendMessage("I also say: " + message);
 					}
 				} catch(ClassNotFoundException classnot){
