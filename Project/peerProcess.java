@@ -162,6 +162,12 @@ public class peerProcess {
             sThread = new Thread(server);
             sThread.start();
 
+
+            /* 
+            * Checks if this peerProcess is NOT the first one to run.
+            * If so, then establish connections to the peerProcesses
+            * that came before.
+            */ 
             if (firstID != peerID) {
                 String[] fields = line.split(" ");
                 System.out.println("This is not the first peerProcess");
@@ -194,12 +200,6 @@ public class peerProcess {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        /* 
-         * Checks if this peerProcess is not the first one to run.
-         * If so, then establish connections to the peerProcesses
-         * that came before.
-         */ 
 
         //Client client = new Client("localhost", portNum);
         //client.setMessage("This was sent from peerProcess");
