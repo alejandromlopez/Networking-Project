@@ -1,11 +1,11 @@
 
-
 import java.util.Properties;
 import java.util.Scanner;
 import java.io.*;
 import java.nio.file.*;
 import java.lang.Math;
 import java.net.*;
+import java.util.concurrent.TimeUnit;
 
 public class peerProcess {
     private final int peerID;
@@ -115,7 +115,7 @@ public class peerProcess {
             int leftover = numOfPieces % 8;
             int byteNum = 0;
             for (int i = 0; leftover > i; i++) {
-                byteNum += (int)Math.pow(2, 8 - i);
+                byteNum += (int) Math.pow(2, 8 - i);
             }
 
             for (int i = 0; i < bitField.length; i++) {
@@ -138,7 +138,7 @@ public class peerProcess {
     }
 
     private void establishConnections() {
-        Socket socket = null; 
+        Socket socket = null;
         ServerSocket server = null;
 
         String workingDir = System.getProperty("user.dir");
@@ -151,7 +151,7 @@ public class peerProcess {
         }
 
         String line = s.nextLine();
-        
+
         try {
             server = new ServerSocket(portNum);
         } catch (IOException e) {
@@ -164,18 +164,16 @@ public class peerProcess {
             String address = fields[1];
             int port = Integer.parseInt(fields[2]);
 
-            /* 
-             * Checks if this peerProcess is NOT the first one to run.
-             * If so, then establish connections to the peerProcesses
-             * that came before.
-             */ 
+            /*
+             * Checks if this peerProcess is NOT the first one to run. If so, then establish
+             * connections to the peerProcesses that came before.
+             */
             if (ID != peerID) {
                 try {
                     socket = new Socket(address, port);
                     System.out.println("Connection established with " + address);
-                    // File dir = new File(workingDir + "/peer_" + peerID);
-                    File dir = new File(workingDir + "/peer_" + peerID + "_to_peer_" + fields[0]);
-                    dir.mkdir();
+                    // File dir = new File(workingDir + "/peer_" + peerID + "_to_peer_" + fields[0]);
+                    // dir.mkdir();
                 } catch (UnknownHostException e1) {
                     System.out.println("Unknown host: " + fields[1]);
                     e1.printStackTrace();
@@ -198,6 +196,12 @@ public class peerProcess {
             }
         }
         
+        // TODO: comment these lines out
+        try {
+            TimeUnit.MILLISECONDS.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
     
     // Starts up the peerProcess and begins message delivery
