@@ -69,7 +69,6 @@ public class MessageHandler {
             case 7:{
                 return null;
             }
-
             default:
                 return "";
         }

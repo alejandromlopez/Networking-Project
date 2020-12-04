@@ -1,7 +1,6 @@
-
-
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /*
  * The StartRemotePeers class begins remote peer processes. 
@@ -11,7 +10,7 @@ public class StartRemotePeers {
 
 	private Vector<RemotePeerInfo> peerInfoVector;
 
-	private static final String username = "cj2";
+	private static final String username = "alopez";
 	
 	public void getConfiguration()
 	{
@@ -23,11 +22,8 @@ public class StartRemotePeers {
 			String workingDir = System.getProperty("user.dir");
 			BufferedReader in = new BufferedReader(new FileReader(workingDir + "/PeerInfo.cfg"));
 			while((st = in.readLine()) != null) {
-				
 				 String[] tokens = st.split("\\s+");
-			    
 			     peerInfoVector.addElement(new RemotePeerInfo(tokens[0], tokens[1], tokens[2]));
-			
 			}
 			
 			in.close();
@@ -56,6 +52,7 @@ public class StartRemotePeers {
 										  + "@" + pInfo.peerAddress 
 										  + " && cd " + workingDir 
 										  + " && java peerProcess " + pInfo.peerId);
+				TimeUnit.MILLISECONDS.sleep(1000);
 			}
 			System.out.println("Starting all remote peers has done." );
 		} catch (Exception ex) {

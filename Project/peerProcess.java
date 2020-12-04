@@ -19,8 +19,6 @@ public class peerProcess {
     private int numOfPieces;
 
     private int portNum;
-    private int firstID;
-
 
     public peerProcess(int pID) {
         peerID = pID;
@@ -113,12 +111,11 @@ public class peerProcess {
 
         portNum = Integer.parseInt(property.split(" ")[1]);
 
-
         if (bit.equals("1")) {
             int leftover = numOfPieces % 8;
             int byteNum = 0;
             for (int i = 0; leftover > i; i++) {
-                byteNum += (int) Math.pow(2, 8 - i);
+                byteNum += (int)Math.pow(2, 8 - i);
             }
 
             for (int i = 0; i < bitField.length; i++) {
@@ -133,7 +130,6 @@ public class peerProcess {
         }
     }
 
-
     // Computes the number of Pieces of the given file
     private void computeNumberOfPiece() {
         double fSize = fileSize;
@@ -141,79 +137,44 @@ public class peerProcess {
         numOfPieces = (int) Math.ceil(fSize / pSize);
     }
 
-    private void createSocket(){
-        System.out.println("Starting createSocket");
+    private void establishConnections() {
+        Socket socket = null; 
+        ServerSocket server = null;
+
         String workingDir = System.getProperty("user.dir");
-        boolean bool = false;
+
         Scanner s = null;
         try {
             s = new Scanner(new File(workingDir + "/PeerInfo.cfg"));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        while(bool){
-            System.out.println("First While");
-            String line = s.nextLine();
-            firstID = Integer.parseInt(line.split(" ")[0]);
-            Socket socket = null;
-            Server server = null;
-            Thread sThread = null;
-            System.out.println("Created Threads and Servers");
 
-            while (s.hasNext()) {
-                server = new Server(portNum);
-                sThread = new Thread(server);
-                byte[] a;
-                do{
-                    try {
-                        s = new Scanner(new File(workingDir + "/PeerInfo.cfg"));
-                        System.out.println("Try");
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                } while (bool);
-                System.out.println("Finished");
-            }
-        }
-    }
-
-
-    private void startProtocol() {
-        String workingDir = System.getProperty("user.dir");
-        Scanner s = null;
-        try {
-            s = new Scanner(new File(workingDir + "/PeerInfo.cfg"));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
         String line = s.nextLine();
-        firstID = Integer.parseInt(line.split(" ")[0]);
-        Socket socket = null;
-        Server server = null;
-        Thread sThread = null;
+        
+        try {
+            server = new ServerSocket(portNum);
+        } catch (IOException e) {
+            System.out.println(e);
+        }
 
         while (s.hasNext()) {
-            server = new Server(portNum);
-            sThread = new Thread(server);
-            sThread.start();
-
+            String[] fields = line.split(" ");
+            int ID = Integer.parseInt(fields[0]);
+            String address = fields[1];
+            int port = Integer.parseInt(fields[2]);
 
             /* 
-            * Checks if this peerProcess is NOT the first one to run.
-            * If so, then establish connections to the peerProcesses
-            * that came before.
-            */ 
-            if (firstID != peerID) {
-                String[] fields = line.split(" ");
-                System.out.println("This is not the first peerProcess");
-
-                if (Integer.parseInt(fields[0]) == peerID) {
-                    break;
-                }
-
+             * Checks if this peerProcess is NOT the first one to run.
+             * If so, then establish connections to the peerProcesses
+             * that came before.
+             */ 
+            if (ID != peerID) {
                 try {
-                    socket = new Socket(fields[1], Integer.parseInt(fields[2]));
-                    File dir = new File(workingDir + "/peer_" + peerID);
+                    socket = new Socket(address, port);
+                    System.out.println("Connection established with " + address);
+                    // File dir = new File(workingDir + "/peer_" + peerID);
+                    File dir = new File(workingDir + "/peer_" + peerID + "_to_peer_" + fields[0]);
                     dir.mkdir();
                 } catch (UnknownHostException e1) {
                     System.out.println("Unknown host: " + fields[1]);
@@ -223,30 +184,25 @@ public class peerProcess {
                     e2.printStackTrace();
                 }
             } else {
-                System.out.println("This is the first peerProcess");
                 break;
             }
 
             line = s.nextLine();
         }
 
-        try {
-            socket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (Integer.parseInt(line.split(" ")[0]) != peerID) {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-
-        //Client client = new Client("localhost", portNum);
-        //client.setMessage("This was sent from peerProcess");
-
-        //Thread cThread = new Thread(client);
-
-        //cThread.start();
+        
     }
     
-    // Startes up the peerProcess and begins message delivery
+    // Starts up the peerProcess and begins message delivery
     public static void main(String[] args) {
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
-        // pp.startProtocol();
+        pp.establishConnections();
     }
 }
