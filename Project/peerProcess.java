@@ -171,8 +171,10 @@ public class peerProcess {
             if (ID != peerID) {
                 try {
                     socket = new Socket(address, port);
+                    new Listener(socket);
                     System.out.println("Connection established with " + address);
-                    // File dir = new File(workingDir + "/peer_" + peerID + "_to_peer_" + fields[0]);
+                    // File dir = new File(workingDir + "/peer_" + peerID + "_to_peer_" +
+                    // fields[0]);
                     // dir.mkdir();
                 } catch (UnknownHostException e1) {
                     System.out.println("Unknown host: " + fields[1]);
@@ -182,6 +184,12 @@ public class peerProcess {
                     e2.printStackTrace();
                 }
             } else {
+                // try {
+                //     socket = server.accept();
+                //     new Listener(socket);
+                // } catch (IOException e) {
+                //     e.printStackTrace();
+                // }
                 break;
             }
 
@@ -195,13 +203,22 @@ public class peerProcess {
                 e.printStackTrace();
             }
         }
-        
-        // TODO: comment these lines out
-        try {
-            TimeUnit.MILLISECONDS.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+
+        while(true) {
+            try {
+                socket = server.accept();
+                
+            } catch(IOException e) {
+                e.printStackTrace();
+            }
         }
+        
+        // // TODO: comment these lines out
+        // try {
+        //     TimeUnit.MILLISECONDS.sleep(10000);
+        // } catch (InterruptedException e) {
+        //     e.printStackTrace();
+        // }
     }
     
     // Starts up the peerProcess and begins message delivery
