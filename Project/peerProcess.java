@@ -21,7 +21,7 @@ public class peerProcess {
     private int portNum;
     private ServerSocket server;
     // private static HashMap<Integer, Listener> sockets;
-    private static HashMap<Integer, Socket> sockets;
+    private static HashMap<Integer, Socket> sockets = new HashMap<Integer, Socket>();
 
     public peerProcess(int pID) {
         peerID = pID;
@@ -53,8 +53,8 @@ public class peerProcess {
 
         // Creates the subdirectory for the peerProcess
         // TODO: uncomment this
-        // File dir = new File(workingDir + "/peer_" + peerID);
-        // dir.mkdir();
+        File dir = new File(workingDir + "/peer_" + peerID);
+        dir.mkdir();
 
         // File path to Common.cfg to read from
         Properties prop = new Properties();
@@ -173,12 +173,14 @@ public class peerProcess {
              */
             if (ID != peerID) {
                 try {
-                    File dir = new File(workingDir + "/peer_" + peerID + "_to_peer_" + fields[0]);
-                    dir.mkdir();
                     socket = new Socket(address, port);
                     // Listener l = new Listener(socket);
                     // l.start();
                     sockets.put(ID, socket);
+                    
+                    File dir = new File(workingDir + "/peer_" + peerID + "_to_peer_" + fields[0]);
+                    dir.mkdir();
+
                     System.out.println("Connection established with " + address);
                 } catch (UnknownHostException e1) {
                     System.out.println("Unknown host: " + fields[1]);
@@ -225,8 +227,5 @@ public class peerProcess {
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
         pp.establishConnections();
         // pp.startProtocol();
-
-        String workingDir = System.getProperty("user.dir");
-        
     }
 }
