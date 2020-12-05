@@ -153,11 +153,11 @@ public class peerProcess {
             e.printStackTrace();
         }
 
-        try {
-            server = new ServerSocket(portNum);
-        } catch (IOException e) {
-            System.out.println(e);
-        }
+        // try {
+        //     server = new ServerSocket(portNum);
+        // } catch (IOException e) {
+        //     System.out.println(e);
+        // }
 
         String line = s.nextLine();
 
@@ -179,8 +179,8 @@ public class peerProcess {
                     // l.start();
                     sockets.put(ID, socket);
                     
-                    File dir = new File(workingDir + "/peer_" + peerID + "_to_peer_" + fields[0]);
-                    dir.mkdir();
+                    // File dir = new File(workingDir + "/peer_" + peerID + "_to_peer_" + fields[0]);
+                    // dir.mkdir();
 
                     System.out.println("Connection established with " + address);
                 } catch (UnknownHostException e1) {
@@ -203,6 +203,16 @@ public class peerProcess {
             line = s.nextLine();
         }
 
+        try {
+            server = new ServerSocket(portNum);
+            Listener l =new Listener(server, peerID, sockets);
+            l.start();
+              File dir = new File(workingDir + "Listener Started for " +peerID);
+                      dir.mkdir();
+        } catch (IOException e) {
+            System.out.println(e);
+        }
+
         // if (Integer.parseInt(line.split(" ")[0]) != peerID) {
         //     try {
         //         socket.close();
@@ -211,14 +221,16 @@ public class peerProcess {
         //     }
         // }
 
-        for (Integer pID: sockets.keySet()) {
-            File dir = new File(workingDir + "/" + pID);
-            dir.mkdir();
-        }
+        // for (Integer pID: sockets.keySet()) {
+        //     File dir = new File(workingDir + "/" + pID);
+        //     dir.mkdir();
+        // }
 
         try {
             TimeUnit.MILLISECONDS.sleep(10000);
         } catch (InterruptedException e) {
+            File dir = new File(workingDir + "TimeoutNotWorking" +peerID+e);
+                      dir.mkdir();
             e.printStackTrace();
         }
     }
