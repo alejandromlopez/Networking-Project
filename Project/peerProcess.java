@@ -5,10 +5,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.lang.Math;
 import java.net.*;
-<<<<<<< HEAD
-=======
 import java.util.HashMap;
->>>>>>> 57fb7cfe66eb5580f9fbd37ea77dd160a495d932
 import java.util.concurrent.TimeUnit;
 
 public class peerProcess {
@@ -22,12 +19,9 @@ public class peerProcess {
     private byte[] bitField;
     private int numOfPieces;
     private int portNum;
-<<<<<<< HEAD
-=======
     private ServerSocket server;
     // private static HashMap<Integer, Listener> sockets;
     private static HashMap<Integer, Socket> sockets = new HashMap<Integer, Socket>();
->>>>>>> 57fb7cfe66eb5580f9fbd37ea77dd160a495d932
 
     public peerProcess(int pID) {
         peerID = pID;
@@ -149,10 +143,6 @@ public class peerProcess {
 
     private void establishConnections() {
         Socket socket = null;
-<<<<<<< HEAD
-        ServerSocket server = null;
-=======
->>>>>>> 57fb7cfe66eb5580f9fbd37ea77dd160a495d932
 
         String workingDir = System.getProperty("user.dir");
 
@@ -163,21 +153,13 @@ public class peerProcess {
             e.printStackTrace();
         }
 
-<<<<<<< HEAD
-        String line = s.nextLine();
-
-=======
->>>>>>> 57fb7cfe66eb5580f9fbd37ea77dd160a495d932
         try {
             server = new ServerSocket(portNum);
         } catch (IOException e) {
             System.out.println(e);
         }
-<<<<<<< HEAD
-=======
 
         String line = s.nextLine();
->>>>>>> 57fb7cfe66eb5580f9fbd37ea77dd160a495d932
 
         while (s.hasNext()) {
             String[] fields = line.split(" ");
@@ -191,14 +173,6 @@ public class peerProcess {
              */
             if (ID != peerID) {
                 try {
-<<<<<<< HEAD
-                    socket = new Socket(address, port);
-                    new Listener(socket);
-                    System.out.println("Connection established with " + address);
-                    // File dir = new File(workingDir + "/peer_" + peerID + "_to_peer_" +
-                    // fields[0]);
-                    // dir.mkdir();
-=======
                     
                     socket = new Socket(address, port);
                     // Listener l = new Listener(socket);
@@ -209,7 +183,6 @@ public class peerProcess {
                     dir.mkdir();
 
                     System.out.println("Connection established with " + address);
->>>>>>> 57fb7cfe66eb5580f9fbd37ea77dd160a495d932
                 } catch (UnknownHostException e1) {
                     System.out.println("Unknown host: " + fields[1]);
                     e1.printStackTrace();
@@ -219,17 +192,10 @@ public class peerProcess {
                 }
             } else {
                 // try {
-<<<<<<< HEAD
-                //     socket = server.accept();
-                //     new Listener(socket);
-                // } catch (IOException e) {
-                //     e.printStackTrace();
-=======
                 // socket = server.accept();
                 // new Listener(socket);
                 // } catch (IOException e) {
                 // e.printStackTrace();
->>>>>>> 57fb7cfe66eb5580f9fbd37ea77dd160a495d932
                 // }
                 break;
             }
@@ -237,31 +203,6 @@ public class peerProcess {
             line = s.nextLine();
         }
 
-<<<<<<< HEAD
-        if (Integer.parseInt(line.split(" ")[0]) != peerID) {
-            try {
-                socket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        while(true) {
-            try {
-                socket = server.accept();
-                
-            } catch(IOException e) {
-                e.printStackTrace();
-            }
-        }
-        
-        // // TODO: comment these lines out
-        // try {
-        //     TimeUnit.MILLISECONDS.sleep(10000);
-        // } catch (InterruptedException e) {
-        //     e.printStackTrace();
-        // }
-=======
         // if (Integer.parseInt(line.split(" ")[0]) != peerID) {
         //     try {
         //         socket.close();
@@ -280,18 +221,14 @@ public class peerProcess {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
->>>>>>> 57fb7cfe66eb5580f9fbd37ea77dd160a495d932
     }
     
     // Starts up the peerProcess and begins message delivery
     public static void main(String[] args) {
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
         pp.establishConnections();
-<<<<<<< HEAD
-=======
         // pp.startProtocol();
 
         // String workingDir = System.getProperty("user.dir");
->>>>>>> 57fb7cfe66eb5580f9fbd37ea77dd160a495d932
     }
 }
