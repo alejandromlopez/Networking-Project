@@ -26,7 +26,6 @@ public class Listener extends Thread {
             out.flush();
             in = new ObjectInputStream(socket.getInputStream());
             try {
-                System.out.println("here");
                 // while(true) {
                 //     message = (String)in.readObject();
                 //     sendMessage(message);
