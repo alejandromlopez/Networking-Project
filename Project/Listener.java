@@ -26,10 +26,12 @@ public class Listener extends Thread {
             out.flush();
             in = new ObjectInputStream(socket.getInputStream());
             try {
-                while(true) {
-                    message = (String)in.readObject();
-                    sendMessage(message);
-                }
+                System.out.println("here");
+                // while(true) {
+                //     message = (String)in.readObject();
+                //     sendMessage(message);
+                // }
+                message = (String)in.readObject();
             } catch (ClassNotFoundException e2) {
                 e2.printStackTrace();
             }

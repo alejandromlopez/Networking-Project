@@ -52,11 +52,11 @@ public class StartRemotePeers {
 										  + "@" + pInfo.peerAddress 
 										  + " && cd " + workingDir 
 										  + " && java peerProcess " + pInfo.peerId);
-				TimeUnit.MILLISECONDS.sleep(100);
+				//TimeUnit.MILLISECONDS.sleep(100);
 			}
 			System.out.println("Starting all remote peers has done." );
 		} catch (Exception ex) {
-			System.out.println(ex);
+			ex.printStackTrace();
 		}
 	}
 }
