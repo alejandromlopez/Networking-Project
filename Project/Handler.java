@@ -1,17 +1,24 @@
 import java.net.*;
 import java.io.*;
 
-public class Handler extends Thread {
+public class Handler implements Runnable{
     private Socket socket;
     private int peerID;
     private int ID;
     private ObjectInputStream in;
     private ObjectOutputStream out;
+    private boolean exit;
 
     public Handler(Socket s, int pid, int id) {
         socket = s;
         peerID = pid;
         ID = id;
+        exit = false;
+        String workingDir = System.getProperty("user.dir");
+        File dir = new File(workingDir + "/handler_connections_" + peerID);
+        dir.mkdir();
+        peerProcess.printThis("/handler_init_" + peerID);
+
     }
 
     public void run() {
@@ -25,16 +32,14 @@ public class Handler extends Thread {
             handshake = new HandshakeMessage(peerID);
             out.writeObject(handshake);
             out.flush();
-
-            dir = new File(workingDir + "/handler_connections_" + peerID);
-            dir.mkdir();
+            
         } catch(Exception e) { 
             e.printStackTrace();
-            
+            peerProcess.printThis("/handler_ERROR_SEE_MEEEEEEEEEEE_" + peerID);
             dir = new File(workingDir + "/handler_send_" + e);
             dir.mkdir();
         }
-
+        
         HandshakeMessage inMessage = null; 
         try {
             inMessage = (HandshakeMessage)in.readObject();
@@ -113,5 +118,9 @@ public class Handler extends Thread {
     //         dir.mkdir();
     //     }
     // }
+    }
+
+    public void exit(){
+        exit = true;
     }
 }

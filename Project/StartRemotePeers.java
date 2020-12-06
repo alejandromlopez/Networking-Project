@@ -10,7 +10,7 @@ public class StartRemotePeers {
 
 	private Vector<RemotePeerInfo> peerInfoVector;
 
-	private static final String username = "alopez";
+	private static final String username = "cj2";
 	
 	public void getConfiguration()
 	{
@@ -52,7 +52,7 @@ public class StartRemotePeers {
 										  + "@" + pInfo.peerAddress 
 										  + " && cd " + workingDir 
 										  + " && java peerProcess " + pInfo.peerId);
-				TimeUnit.MILLISECONDS.sleep(100);
+				TimeUnit.MILLISECONDS.sleep(1500);
 			}
 			System.out.println("Starting all remote peers has done." );
 		} catch (Exception ex) {

@@ -21,7 +21,8 @@ public class peerProcess {
     private int numOfPieces;
     private int portNum;
     private ServerSocket server;
-    private static HashMap<Integer, Handler> sockets = new HashMap<Integer, Handler>();
+    private static String wDD = System.getProperty("user.dir");
+    private static HashMap<Integer, Thread> sockets = new HashMap<Integer, Thread>();
     // private static HashMap<Integer, Socket> sockets = new HashMap<Integer, Socket>();
     private static HashMap<Integer, RemotePeerInfo> peers = new HashMap<Integer, RemotePeerInfo>();
 
@@ -142,8 +143,6 @@ public class peerProcess {
         try {
             s = new Scanner(new File(file));
 
-            dir = new File(workingDir + "/init_scanner_success_" + peerID);
-            dir.mkdir();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
 
@@ -151,8 +150,9 @@ public class peerProcess {
             dir.mkdir();
         }
 
-        String line = s.nextLine();
-        while (s.hasNext()) {
+        String line="";
+        do {
+            line = s.nextLine();
             String[] fields = line.split(" ");
             int ID = Integer.parseInt(fields[0]);
             String address = fields[1];
@@ -160,10 +160,10 @@ public class peerProcess {
 
             RemotePeerInfo rpi = new RemotePeerInfo(ID, address, port);
             peers.put(ID, rpi);
-
-            dir = new File(workingDir + "/create_peerinfo_" + peerID);
-            dir.mkdir();
-        }
+            
+            
+            
+        } while (s.hasNext()); 
     }
 
     // Computes the number of Pieces of the given file
@@ -176,14 +176,14 @@ public class peerProcess {
     private void createSockets() {
         Socket socket = null;
         String workingDir = System.getProperty("user.dir");
-        File dir = new File(workingDir + "/server_" + peerID);
+        File dir = new File(workingDir + "/dir:" + workingDir);
+        dir.mkdir();
+        HashMap<Integer, RemotePeerInfo> hiddenPeers = peers;
 
         Scanner s = null;
         try {
             s = new Scanner(new File(workingDir + "/PeerInfo.cfg"));
-
-            dir = new File(workingDir + "/pp_scanner_success_" + peerID);
-            dir.mkdir();
+            
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             dir = new File(workingDir + "/pp_scanner_" + e);
@@ -215,34 +215,31 @@ public class peerProcess {
                 try {
                     socket = new Socket(address, port);
                     Handler h = new Handler(socket, peerID, ID);
-                    h.start();
+                    Thread handler = new Thread(h);
+                    handler.start();
 
-
-                    dir = new File(workingDir + "/pp_handle_" + peerID);
-                    dir.mkdir();
-
-                    sockets.put(ID, h);
+                    sockets.put(ID, handler);
 
                     dir = new File(workingDir + "/peer_" + peerID + "_to_peer_" + ID);
                     dir.mkdir();
 
                     System.out.println("Connection established with " + address);
+                    hiddenPeers.remove(ID);
                 } 
-                // catch (UnknownHostException e1) {
-                //     System.out.println("Unknown host: " + fields[1]);
-                //     e1.printStackTrace();
-                // } catch (IOException e2) {
-                //     System.out.println("IOException at port " + fields[2]);
-                //     e2.printStackTrace();
-                // }
                 catch (Exception e) {
-                    dir = new File(workingDir + "/pp_sockets_" + e);
+                    dir = new File(workingDir + "/pp_sockets_"+ peerID+ "_to_" + ID +":"+ e);
                     dir.mkdir();
                 }
             } else {
-                Listener l = new Listener(server, peerID, peers);
-                l.start();
+                hiddenPeers.remove(peerID);
+                if (hiddenPeers.isEmpty())
+                    break;
+                Listener l = new Listener(server, peerID, hiddenPeers);
+                Thread listener = new Thread(l);
+                listener.start();
 
+                dir = new File(workingDir + "/Thread_is_alive_:" + peerID+listener.isAlive());
+                    dir.mkdir();
                 dir = new File(workingDir + "/pp_listen_" + peerID);
                 dir.mkdir();
                 break;
@@ -250,15 +247,6 @@ public class peerProcess {
 
             line = s.nextLine();
         }
-
-        // if (Integer.parseInt(line.split(" ")[0]) != peerID) {
-        // try {
-        // socket.close();
-        // } catch (IOException e) {
-        // e.printStackTrace();
-        // }
-        // }
-
         // TODO: comment this out when the server stays listening
         try {
             TimeUnit.MILLISECONDS.sleep(10000);
@@ -267,7 +255,7 @@ public class peerProcess {
         }
     }
 
-
+    /*
     // Socket sOut = null;
     // ObjectOutputStream oos = null;
     // File dir = new File(workingDir);
@@ -372,7 +360,7 @@ public class peerProcess {
     //         // dir = new File(workingDir + "/pp_here2_" + peerID + "_" + e3);
     //         // dir.mkdir();
     //     }
-    // }
+    // }*/
 
     public void sendHandshake(HandshakeMessage msg) {
         try {
@@ -382,11 +370,18 @@ public class peerProcess {
             ioException.printStackTrace();
         }
     }
+
+    public static void printThis(String a){
+        String workingDir = System.getProperty("user.dir");
+        File dir = new File(wDD + "/" + a);
+        dir.mkdir();
+    }
     
     // Starts up the peerProcess and begins message delivery
     public static void main(String[] args) {
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
         pp.createSockets();
         // pp.startProtocol();
+
     }
 }
