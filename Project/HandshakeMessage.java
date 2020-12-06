@@ -1,8 +1,6 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.Serializable;
 
-public class HandshakeMessage {
+public class HandshakeMessage implements Serializable {
     private final String handshakeHeader = "P2PFILESHARINGPROJ";
     private String zeroBits = "0000000000";
     private final int peerID;
@@ -36,10 +34,10 @@ public class HandshakeMessage {
 
     // }
 
-    public void write(DataOutputStream o) throws IOException
-    {
-        o.writeChars(handshakeHeader);
-        o.writeChars(zeroBits);
-        o.writeInt(peerID);
-    }
+    // public void write(DataOutputStream o) throws IOException
+    // {
+    //     o.writeChars(handshakeHeader);
+    //     o.writeChars(zeroBits);
+    //     o.writeInt(peerID);
+    // }
 }
