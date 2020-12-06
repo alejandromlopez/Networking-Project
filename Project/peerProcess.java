@@ -195,13 +195,14 @@ public class peerProcess {
             dir = new File(workingDir + "/server_" + peerID);
             dir.mkdir();
         } catch (Exception e) {
-            dir = new File(workingDir + "/server_error_" + e);
+            dir = new File(workingDir + "/server_error_" + peerID + e);
             dir.mkdir();
         }
 
-        String line = s.nextLine();
+        String line = "";
+        do {
+            line = s.nextLine();
 
-        while (s.hasNext()) {
             String[] fields = line.split(" ");
             int ID = Integer.parseInt(fields[0]);
             String address = fields[1];
@@ -227,7 +228,7 @@ public class peerProcess {
                     hiddenPeers.remove(ID);
                 } 
                 catch (Exception e) {
-                    dir = new File(workingDir + "/pp_sockets_"+ peerID+ "_to_" + ID +":"+ e);
+                    dir = new File(workingDir + "/pp_sockets_" + peerID + "_to_" + ID + ":" + e);
                     dir.mkdir();
                 }
             } else {
@@ -238,15 +239,14 @@ public class peerProcess {
                 Thread listener = new Thread(l);
                 listener.start();
 
-                dir = new File(workingDir + "/Thread_is_alive_:" + peerID+listener.isAlive());
-                    dir.mkdir();
+                // dir = new File(workingDir + "/Thread_is_alive_:" + peerID+listener.isAlive());
+                // dir.mkdir();
                 dir = new File(workingDir + "/pp_listen_" + peerID);
                 dir.mkdir();
                 break;
             }
+        } while (s.hasNext());
 
-            line = s.nextLine();
-        }
         // TODO: comment this out when the server stays listening
         try {
             TimeUnit.MILLISECONDS.sleep(10000);

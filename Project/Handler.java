@@ -17,31 +17,38 @@ public class Handler implements Runnable{
         String workingDir = System.getProperty("user.dir");
         File dir = new File(workingDir + "/handler_connections_" + peerID);
         dir.mkdir();
-        peerProcess.printThis("/handler_init_" + peerID);
-
     }
 
     public void run() {
         HandshakeMessage handshake = null; 
         String workingDir = System.getProperty("user.dir");
-        File dir = new File(workingDir + "/server_" + peerID);
+        File dir = new File(workingDir + "/handler_is_listening_" + peerID);
+        dir.mkdir();
         
         try {
-            in = new ObjectInputStream(socket.getInputStream());
             out = new ObjectOutputStream(socket.getOutputStream());
+            dir = new File(workingDir + "/handler_output_" + peerID);
+            dir.mkdir();
+
             handshake = new HandshakeMessage(peerID);
             out.writeObject(handshake);
+            dir = new File(workingDir + "/handler_write_" + peerID);
+            dir.mkdir();
+
             out.flush();
             
         } catch(Exception e) { 
             e.printStackTrace();
-            peerProcess.printThis("/handler_ERROR_SEE_MEEEEEEEEEEE_" + peerID);
             dir = new File(workingDir + "/handler_send_" + e);
             dir.mkdir();
         }
-        
+
         HandshakeMessage inMessage = null; 
         try {
+            in = new ObjectInputStream(socket.getInputStream());
+            dir = new File(workingDir + "/handler_after_input_" + peerID);
+            dir.mkdir();
+
             inMessage = (HandshakeMessage)in.readObject();
             if (inMessage.getHandshakeHeader().equals("P2PFILESHARINGPROJ") && inMessage.getPeerID() == ID) {
                 out.writeObject(handshake);
@@ -53,7 +60,7 @@ public class Handler implements Runnable{
         } catch (Exception e2) {
             e2.printStackTrace();
 
-            dir = new File(workingDir + "/handler_rcv_" + e2);
+            dir = new File(workingDir + "/handler_rcv_" + peerID + "_" + e2);
             dir.mkdir();
         }
 
