@@ -207,27 +207,25 @@ public class peerProcess {
         ObjectOutputStream oos = null;
         File dir = new File(workingDir);
 
-        if (peerID == 1003) {
+        if (peerID == 1005) {
             try {
-                sOut = new Socket("lin114-00.cise.ufl.edu", 9998);
-                dir = new File(workingDir + "/1003");
+                sOut = new Socket("lin114-00.cise.ufl.edu", 1313);
+                dir = new File(workingDir + "/1005");
                 dir.mkdir();
-                oos = new ObjectOutputStream(sOut.getOutputStream());
-                oos.writeObject(new HandshakeMessage(1003));
+                ObjectOutputStream oos = new ObjectOutputStream(sOut.getOutputStream());
+                oos.writeObject(new HandshakeMessage(1005));
                 oos.flush();
-            } catch (IOException e1) {
-                e1.printStackTrace();
-                dir = new File(workingDir + "/pp1_1003_" + e1);
-                dir.mkdir();
+                oos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             } finally {
                 try {
                     sOut.close();
-                    oos.close();
-                    dir = new File(workingDir + "/1003_closed");
+                    dir = new File(workingDir + "/1005_closed");
                     dir.mkdir();
-                } catch (IOException e2) {
-                    e2.printStackTrace();
-                    dir = new File(workingDir + "/pp2_1003_" + e2);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    dir = new File(workingDir + "/in1005_" + e);
                     dir.mkdir();
                 }
             }
@@ -242,7 +240,7 @@ public class peerProcess {
             dir.mkdir();
 
             while (true) {
-                if (peerID != 1001 && peerID != 1003) {
+                if (peerID != 1001 && peerID != 1005) {
                     break;
                 }
                 if (count == 5) {
@@ -253,9 +251,43 @@ public class peerProcess {
                 dir = new File(workingDir + "/accepted_in_" + peerID);
                 dir.mkdir();
 
-                new Handler(s1, peerID).start();
+                in = new ObjectInputStream(s1.getInputStream());
+                dir = new File(workingDir + "/instream_" + peerID);
+                dir.mkdir();
 
-                count++;
+                HandshakeMessage inMessage = (HandshakeMessage)in.readObject();
+                dir = new File(workingDir + "/inmsg_" + peerID);
+                dir.mkdir();
+
+                if (inMessage.getHandshakeHeader().equals("P2PFILESHARINGPROJ") && (inMessage.getPeerID() == 1005 || inMessage.getPeerID() == 1001)) {
+                    dir = new File(workingDir + "/" + peerID + "_rcvd_" + inMessage.getPeerID());
+                    dir.mkdir();
+                } else {
+                    break;
+                }
+
+                dir = new File(workingDir + "/port_to_send_to" + s1.getPort() + "at_address_");
+                dir.mkdir();
+
+                s1 = new Socket("lin114-04.cise.ufl.edu", 1313);
+
+                dir = new File(workingDir + "/port_to_send_to" + s1.getPort() + "at_address_");
+                dir.mkdir();
+
+                out = new ObjectOutputStream(s1.getOutputStream());
+                // out.writeObject(new HandshakeMessage(1001));
+                // out.flush();
+                HandshakeMessage outMessage = new HandshakeMessage(peerID);
+                sendMessage(outMessage);
+                dir = new File(workingDir + "/" + peerID + "_out_to_" + inMessage.getPeerID());
+                dir.mkdir();
+
+                try {
+                    TimeUnit.MILLISECONDS.sleep(10000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                break;
             }
         } 
         // catch (IOException e1) {
@@ -279,9 +311,11 @@ public class peerProcess {
 
         // TODO: comment this out when the server stays listening
         try {
-            TimeUnit.MILLISECONDS.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            out.writeObject(msg);
+            out.flush();
+            TimeUnit.MILLISECONDS.sleep(1000);
+        } catch(Exception ioException) { 
+            ioException.printStackTrace();
         }
     }
     

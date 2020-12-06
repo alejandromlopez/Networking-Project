@@ -24,4 +24,20 @@ public class HandshakeMessage implements Serializable {
     public void setZeroBits(String zb) {
         zeroBits = zb;
     }
+
+    // public void read (DataInputStream in) throws IOException 
+    // {
+    //     if ((mPayload != null) && (mPayload.length) > 0) 
+    //     {
+    //         in.readFully(mPayload, 0, mPayload.length);
+    //     }
+
+    // }
+
+    // public void write(DataOutputStream o) throws IOException
+    // {
+    //     o.writeChars(handshakeHeader);
+    //     o.writeChars(zeroBits);
+    //     o.writeInt(peerID);
+    // }
 }

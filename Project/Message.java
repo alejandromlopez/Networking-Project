@@ -51,7 +51,7 @@ public class Message {
         this.mPayload = pl;
     }
 
-    public void read(DataInputStream in) throws IOException 
+    public void read (DataInputStream in) throws IOException 
     {
         if ((mPayload != null) && (mPayload.length) > 0) 
         {

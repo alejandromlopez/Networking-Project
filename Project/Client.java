@@ -41,7 +41,7 @@ public class Client {
         { 
             try
             { 
-                line = input.readLine(); 
+                //line = input.readLine(); 
                 out.writeUTF(line); 
             } 
             catch(IOException i) 
