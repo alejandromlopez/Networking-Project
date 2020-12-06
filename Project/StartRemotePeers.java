@@ -10,7 +10,7 @@ public class StartRemotePeers {
 
 	private Vector<RemotePeerInfo> peerInfoVector;
 
-	private static final String username = "cj2";
+	private static final String username = "kycheng";
 	
 	public void getConfiguration()
 	{
