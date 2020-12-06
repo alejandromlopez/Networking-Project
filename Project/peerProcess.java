@@ -21,10 +21,9 @@ public class peerProcess {
     private int portNum;
     private ServerSocket server;
     // private static HashMap<Integer, Listener> sockets;
-    private static HashMap<Integer, Listener> sockets = new HashMap<Integer, Listener>();
+    private static HashMap<Integer, Handler> sockets = new HashMap<Integer, Handler>();
 
     private ObjectInputStream in;
-    private ObjectOutputStream out;
 
     public peerProcess(int pID) {
         peerID = pID;
@@ -205,6 +204,7 @@ public class peerProcess {
 
         String workingDir = System.getProperty("user.dir");
         Socket sOut = null;
+        ObjectOutputStream oos = null;
         File dir = new File(workingDir);
 
         if (peerID == 1003) {
@@ -212,19 +212,22 @@ public class peerProcess {
                 sOut = new Socket("lin114-00.cise.ufl.edu", 9998);
                 dir = new File(workingDir + "/1003");
                 dir.mkdir();
-                ObjectOutputStream oos = new ObjectOutputStream(sOut.getOutputStream());
+                oos = new ObjectOutputStream(sOut.getOutputStream());
                 oos.writeObject(new HandshakeMessage(1003));
                 oos.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (IOException e1) {
+                e1.printStackTrace();
+                dir = new File(workingDir + "/pp1_1003_" + e1);
+                dir.mkdir();
             } finally {
                 try {
                     sOut.close();
+                    oos.close();
                     dir = new File(workingDir + "/1003_closed");
                     dir.mkdir();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    dir = new File(workingDir + "/in1003_" + e);
+                } catch (IOException e2) {
+                    e2.printStackTrace();
+                    dir = new File(workingDir + "/pp2_1003_" + e2);
                     dir.mkdir();
                 }
             }
@@ -250,26 +253,7 @@ public class peerProcess {
                 dir = new File(workingDir + "/accepted_in_" + peerID);
                 dir.mkdir();
 
-                in = new ObjectInputStream(s1.getInputStream());
-                dir = new File(workingDir + "/instream_" + peerID);
-                dir.mkdir();
-
-                HandshakeMessage inMessage = (HandshakeMessage)in.readObject();
-                dir = new File(workingDir + "/inmsg_" + peerID);
-                dir.mkdir();
-
-                if (inMessage.getHandshakeHeader().equals("P2PFILESHARINGPROJ") && (inMessage.getPeerID() == 1003 || inMessage.getPeerID() == 1001)) {
-                    dir = new File(workingDir + "/" + peerID + "_rcvd_" + inMessage.getPeerID());
-                    dir.mkdir();
-                } else {
-                    break;
-                }
-
-                out = new ObjectOutputStream(s1.getOutputStream());
-                HandshakeMessage outMessage = new HandshakeMessage(peerID);
-                sendMessage(outMessage);
-                dir = new File(workingDir + "/" + peerID + "_out_to_" + inMessage.getPeerID());
-                dir.mkdir();
+                new Handler(s1, peerID).start();
 
                 count++;
             }
@@ -280,37 +264,24 @@ public class peerProcess {
         //     e2.printStackTrace();
         // } 
         catch (Exception e) {
-            dir = new File(workingDir + "/" + peerID + "_" + e);
+            dir = new File(workingDir + "/pp_here1_" + peerID + "_" + e);
             dir.mkdir();
         } finally {
             try {
                 in.close();
-                out.close();
                 s1.close();
             } catch (IOException e3) {
                 e3.printStackTrace();
+                dir = new File(workingDir + "/pp_here2_" + peerID + "_" + e3);
+                dir.mkdir();
             }
         }
 
-        // for (Integer pID: sockets.keySet()) {
-        //     File dir = new File(workingDir + "/" + pID);
-        //     dir.mkdir();
-        // }
-
-        // // TODO: comment this out when the server stays listening
-        // try {
-        //     TimeUnit.MILLISECONDS.sleep(10000);
-        // } catch (InterruptedException e) {
-        //     e.printStackTrace();
-        // }
-    }
-
-    public void sendMessage(HandshakeMessage msg) {
+        // TODO: comment this out when the server stays listening
         try {
-            out.writeObject(msg);
-            out.flush();
-        } catch(IOException ioException) { 
-            ioException.printStackTrace();
+            TimeUnit.MILLISECONDS.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
     
