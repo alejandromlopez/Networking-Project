@@ -10,7 +10,7 @@ public class StartRemotePeers {
 
 	private Vector<RemotePeerInfo> peerInfoVector;
 
-	private static final String username = "cj2";
+	private static final String username = "alopez";
 	
 	public void getConfiguration()
 	{
@@ -23,7 +23,7 @@ public class StartRemotePeers {
 			BufferedReader in = new BufferedReader(new FileReader(workingDir + "/PeerInfo.cfg"));
 			while((st = in.readLine()) != null) {
 				 String[] tokens = st.split("\\s+");
-			     peerInfoVector.addElement(new RemotePeerInfo(tokens[0], tokens[1], tokens[2]));
+			     peerInfoVector.addElement(new RemotePeerInfo(Integer.parseInt(tokens[0]), tokens[1], Integer.parseInt(tokens[2])));
 			}
 			
 			in.close();
