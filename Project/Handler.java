@@ -21,21 +21,21 @@ public class Handler implements Runnable{
         Thread wThread = new Thread(w);
         wThread.start();
 
-        Reader r = new Reader(socket, peerID);
-        Thread rThread = new Thread(r);
-        rThread.start();
+        // Reader r = new Reader(socket, peerID);
+        // Thread rThread = new Thread(r);
+        // rThread.start();
 
-        HandshakeMessage inMessage = r.getHandshakeMessage(); 
-        try {
-            peerProcess.printThis(peerID + " received from " + inMessage.getPeerID() + " in Handler");
+        // HandshakeMessage inMessage = r.getHandshakeMessage(); 
+        // try {
+        //     peerProcess.printThis(peerID + " received from " + inMessage.getPeerID() + " in Handler");
 
-            if (inMessage.getHandshakeHeader().equals("P2PFILESHARINGPROJ") && inMessage.getPeerID() == ID) {
-                System.out.println(peerID + " received the right handshake message!");
-            }
-        } catch (Exception e2) {
-            //e2.printStackTrace();
-            System.out.println(peerID + " handler input error: " + e2);
-        }
+        //     if (inMessage.getHandshakeHeader().equals("P2PFILESHARINGPROJ") && inMessage.getPeerID() == ID) {
+        //         System.out.println(peerID + " received the right handshake message!");
+        //     }
+        // } catch (Exception e2) {
+        //     //e2.printStackTrace();
+        //     System.out.println(peerID + " handler input error: " + e2);
+        // }
 
 
     //     String workingDir = System.getProperty("user.dir");

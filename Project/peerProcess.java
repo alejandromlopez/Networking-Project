@@ -26,6 +26,7 @@ public class peerProcess {
     // private static HashMap<Integer, Socket> sockets = new HashMap<Integer,
     // Socket>();
     private static HashMap<Integer, RemotePeerInfo> peers = new HashMap<Integer, RemotePeerInfo>();
+    HashMap<Integer, String> hm2 = new HashMap<Integer, String>();
 
     private ObjectInputStream in;
     private ObjectOutputStream out;
@@ -158,10 +159,12 @@ public class peerProcess {
             int ID = Integer.parseInt(fields[0]);
             String address = fields[1];
             int port = Integer.parseInt(fields[2]);
+            String blank = "";
 
             RemotePeerInfo rpi = new RemotePeerInfo(ID, address, port);
             peers.put(ID, rpi);
-
+            if (peerID!=ID)
+                hm2.put(ID, blank);
         } while (s.hasNext());
     }
 
@@ -216,9 +219,9 @@ public class peerProcess {
                     handler.start();
 
                     sockets.put(ID, handler);
-                    hm.put(ID, "accepted");
-                    count++;
-                    System.out.println(peerID + " incremented count because of " + ID);
+                    hm2.replace(ID, "sent");
+
+                    // System.out.println(peerID + " incremented count because of " + ID);
 
                     System.out.println(peerID + ": Connection established with " + address + " " + ID);
                     // hiddenPeers.remove(ID);
@@ -235,37 +238,48 @@ public class peerProcess {
 
         while (true) {
             try {
+                boolean done = true;
+                for (String a:hm2.values()){
+                    if(a.equals("received"))
+                        continue;
+                    else
+                        done = false;
+                }
+
+                if (done){
+                    System.out.println(peerID + " is done.");
+                    break;
+                }
+
                 inSocket = server.accept();
 
                 in = new ObjectInputStream(inSocket.getInputStream());
                 HandshakeMessage input = (HandshakeMessage) in.readObject();
-                in.close();
 
-                if (hm.containsKey(input.getPeerID())) {
-                    System.out.println(peerID + " continued because of " + input.getPeerID());
+                if (hm2.get(input.getPeerID()).equals("sent")) {
+                    System.out.println(peerID + " confirmed from " + input.getPeerID());
+                    hm2.replace(input.getPeerID(), "sent", "received");
                     continue;
                 } else {
-                    System.out.println(peerID + " incremented count because of " + input.getPeerID());
+                    System.out.println(peerID + " received from " + input.getPeerID() + ". "
+                    + peerID + " will now send handshake back");
                     count++;
                 }
 
-                hm.put(input.getPeerID(), "accepted");
+                hm2.replace(input.getPeerID(), "received");
 
                 int pid = input.getPeerID();
                 String address = peers.get(pid).getAddress();
                 int port = peers.get(pid).getPort();
                 inSocket.close();
 
-                System.out.println(peerID + " received message from " + pid + " in peerProcess");
+                //System.out.println(peerID + " received message from " + pid + " in peerProcess");
 
                 inSocket = new Socket(address, port);
                 Handler h2 = new Handler(inSocket, peerID, pid);
                 Thread t = new Thread(h2);
                 t.start();
 
-                if (count == 3) {
-                    break;
-                }
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("peerProcess " + peerID + " incoming error: " + e);
@@ -276,8 +290,6 @@ public class peerProcess {
                 }
                 break;
             }
-            
-
         }
 
         // // TODO: comment this out when the server stays listening
@@ -286,6 +298,13 @@ public class peerProcess {
         // } catch (Exception ioException) {
         //     ioException.printStackTrace();
         // }
+
+        
+        /*
+
+            START PROTOCOL
+
+            */
     }
 
     /*
