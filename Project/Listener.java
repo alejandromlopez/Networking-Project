@@ -16,6 +16,9 @@ public class Listener implements Runnable{
         peerID = pid;
         peers = p;
         exit = false;
+        String workingDir = System.getProperty("user.dir");
+        File dir = new File(workingDir + "/hiddenPeers_size_for_" + peerID+"_is_"+peers.size());
+        dir.mkdir();
     }
 
     public void run() {
@@ -24,40 +27,43 @@ public class Listener implements Runnable{
         dir.mkdir();
 
         while (true) {
+            int pid=-1;
             try {
                 if(peers.isEmpty())
                     break;
                     
                 socket = server.accept();
 
-                dir = new File(workingDir + "/listener_after_accept_" + peerID);
-                dir.mkdir();
+                // dir = new File(workingDir + "/listener_after_accept_" + peerID);
+                // dir.mkdir();
 
                 in = new ObjectInputStream(socket.getInputStream());
                 HandshakeMessage input = (HandshakeMessage)in.readObject();
 
-                dir = new File(workingDir + "/listener_after_input_" + peerID);
-                dir.mkdir();
+                // dir = new File(workingDir + "/listener_after_input_" + peerID);
+                // dir.mkdir();
 
-                int pid = input.getPeerID();
+                pid = input.getPeerID();
                 String address = peers.get(pid).getAddress();
                 int port = peers.get(pid).getPort();
 
                 socket = new Socket(address, port);
-                dir = new File(workingDir + "/listener_after_socket_" + peerID);
-                dir.mkdir();
+                // dir = new File(workingDir + "/listener_after_socket_" + peerID);
+                // dir.mkdir();
 
                 out = new ObjectOutputStream(socket.getOutputStream());
-                dir = new File(workingDir + "/listener_after_output_" + peerID);
-                dir.mkdir();
+                // dir = new File(workingDir + "/listener_after_output_" + peerID);
+                // dir.mkdir();
 
                 out.writeObject(new HandshakeMessage(peerID));
-                dir = new File(workingDir + "/listener_after_write_" + peerID);
-                dir.mkdir();
+                // dir = new File(workingDir + "/listener_after_write_" + peerID);
+                // dir.mkdir();
                 peers.remove(pid);
+                dir = new File(workingDir + "/listener_after_remove_of_" + pid + "____"+ peerID + "_peers_size_is_" + peers.size());
+                dir.mkdir();
             } catch (Exception e) {
                 e.printStackTrace();
-                dir = new File(workingDir + "/listener_" + peerID + "_"+ e);
+                dir = new File(workingDir + "/listener_from_" + pid + "_to_" + peerID + "_" + e);
                 dir.mkdir();
             }
         }
