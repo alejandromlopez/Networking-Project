@@ -1,12 +1,11 @@
 import java.net.*;
+import java.util.concurrent.TimeUnit;
 import java.io.*;
 
 public class Handler implements Runnable{
     private Socket socket;
     private int peerID;
     private int ID;
-    private ObjectInputStream in;
-    private ObjectOutputStream out;
     private boolean exit;
 
     public Handler(Socket s, int pid, int id) {
@@ -14,54 +13,28 @@ public class Handler implements Runnable{
         peerID = pid;
         ID = id;
         exit = false;
-        String workingDir = System.getProperty("user.dir");
-        File dir = new File(workingDir + "/handler_connections_" + peerID);
-        dir.mkdir();
     }
 
     public void run() {
-        HandshakeMessage handshake = null; 
-        String workingDir = System.getProperty("user.dir");
-        File dir = new File(workingDir + "/handler_is_listening_" + peerID);
-        dir.mkdir();
-        
+        HandshakeMessage handshake = new HandshakeMessage(peerID); 
+        Writer w = new Writer(handshake, socket, peerID);
+        Thread wThread = new Thread(w);
+        wThread.start();
+
+        Reader r = new Reader(socket, peerID);
+        Thread rThread = new Thread(r);
+        rThread.start();
+
+        HandshakeMessage inMessage = r.getHandshakeMessage(); 
         try {
-            out = new ObjectOutputStream(socket.getOutputStream());
-            dir = new File(workingDir + "/handler_output_" + peerID);
-            dir.mkdir();
+            peerProcess.printThis(peerID + " received from " + inMessage.getPeerID() + " in Handler");
 
-            handshake = new HandshakeMessage(peerID);
-            out.writeObject(handshake);
-            dir = new File(workingDir + "/handler_write_" + peerID);
-            dir.mkdir();
-
-            out.flush();
-            
-        } catch(Exception e) { 
-            e.printStackTrace();
-            dir = new File(workingDir + "/handler_send_" + e);
-            dir.mkdir();
-        }
-
-        HandshakeMessage inMessage = null; 
-        try {
-            in = new ObjectInputStream(socket.getInputStream());
-            dir = new File(workingDir + "/handler_after_input_" + peerID);
-            dir.mkdir();
-
-            inMessage = (HandshakeMessage)in.readObject();
             if (inMessage.getHandshakeHeader().equals("P2PFILESHARINGPROJ") && inMessage.getPeerID() == ID) {
-                out.writeObject(handshake);
-                out.flush();
-
-                dir = new File(workingDir + "/handler_out_success_" + peerID);
-                dir.mkdir();
+                System.out.println(peerID + " received the right handshake message!");
             }
         } catch (Exception e2) {
-            e2.printStackTrace();
-
-            dir = new File(workingDir + "/handler_rcv_" + peerID + "_" + e2);
-            dir.mkdir();
+            //e2.printStackTrace();
+            System.out.println(peerID + " handler input error: " + e2);
         }
 
 
