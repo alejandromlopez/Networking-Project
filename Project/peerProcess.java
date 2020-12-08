@@ -324,6 +324,11 @@ public class peerProcess {
                     else if (inMessage instanceof Uninterested) {
                         Uninterested uninterested = (Uninterested)inMessage;
                         System.out.println(peerID + " has received an uninterested message from " + uninterested.getPID());
+                        String workingDir = System.getProperty("user.dir");
+
+                        // Creates the subdirectory for the peerProcess
+                        File dir = new File(workingDir + "/This_is_for_the_uninterested_messages_for_"+peerID);
+                        dir.mkdir();
                         break;
                     } 
                     //Have
