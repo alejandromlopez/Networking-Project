@@ -168,6 +168,7 @@ public class peerProcess {
 
     private void establishConnections() {
         Socket socket = null;
+        Socket socket2 = null;
         String workingDir = System.getProperty("user.dir");
 
         Scanner s = null;
@@ -200,6 +201,7 @@ public class peerProcess {
             if (ID != peerID) {
                 try {
                     socket = new Socket(address, port);
+                    // socket2 = new Socket(address, port);
                     System.out.println(peerID + ": Connection established with " + address + " " + ID);
 
                     Handler h = new Handler(socket, peerID, ID);
@@ -256,6 +258,7 @@ public class peerProcess {
                 inSocket.close();
 
                 inSocket = new Socket(address, port);
+                // Socket socket3 = new Socket(address, port);
                 sockets.put(pid, inSocket);
                 Handler handler2 = new Handler(inSocket, peerID, pid);
                 Thread t = new Thread(handler2);
@@ -273,17 +276,19 @@ public class peerProcess {
             }
         }
 
-        /* 
-        
-        
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        
-                        CHANGE CODE HERE AFTER COMPLETION OF PROJECT FOR HANDSHAKE TO USE LISTENER.
-        
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        
-        
-        */
+        /*
+         * 
+         * 
+         * /////////////////////////////////////////////////////////////////////////////
+         * ///////////////////////////////////
+         * 
+         * CHANGE CODE HERE AFTER COMPLETION OF PROJECT FOR HANDSHAKE TO USE LISTENER.
+         * 
+         * /////////////////////////////////////////////////////////////////////////////
+         * ///////////////////////////////////
+         * 
+         * 
+         */
         Listener l = new Listener();
         Thread t = new Thread(l);
         t.start();
@@ -294,8 +299,21 @@ public class peerProcess {
             e.printStackTrace();
         }
 
-        if (haveFile){
+        if (haveFile) {
             for (Socket sock : sockets.values()) {
+                // System.out.println("Socket Address: " + sock.getInetAddress() + " Socket Port: " + sock.getPort() + sock.toString());
+                // Socket nSocket = null;
+                // try {
+                //     nSocket = new Socket(sock.getInetAddress(), sock.getPort());
+                // } catch (UnknownHostException e) {
+                //     // TODO Auto-generated catch block
+                //     e.printStackTrace();
+                //     System.out.println(e);
+                // } catch (IOException e) {
+                //     // TODO Auto-generated catch block
+                //     e.printStackTrace();
+                //     System.out.println(e);
+                // }
                 Bitfield b = new Bitfield(bitField, peerID);
                 Writer bitfieldOut = new Writer(b, sock, peerID);
                 Thread wThread = new Thread(bitfieldOut);

@@ -1,5 +1,7 @@
+import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 public class Writer implements Runnable {
     private int peerID;
@@ -10,7 +12,21 @@ public class Writer implements Runnable {
     
     public Writer(Message m, Socket s, int pid) {
         message = m;
-        socket = s;
+
+        Socket nSocket = null;
+        try {
+            nSocket = new Socket(s.getInetAddress(), s.getPort());
+        } catch (UnknownHostException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            System.out.println(e);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            System.out.println(e);
+        }
+
+        socket = nSocket;
         peerID = pid;
     }
 
@@ -36,6 +52,7 @@ public class Writer implements Runnable {
             }
 
             out.flush();
+            //out.close();
         } catch(Exception e) {
             System.out.println(peerID + " writer output error: " + e); 
             e.printStackTrace();
