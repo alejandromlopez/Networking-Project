@@ -1,10 +1,8 @@
-import java.io.Serializable;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public class Have extends Message implements Serializable 
-{
+public class Have extends Message {
     private int pieceIdx;
 
     public Have(byte[] pieceIDIdx, int pieceID) 

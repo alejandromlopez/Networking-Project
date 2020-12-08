@@ -4,7 +4,6 @@ import java.net.Socket;
 
 public class Reader implements Runnable {
     private int peerID;
-    private int ID;
     private ObjectInputStream in;
     private Message message;
     private HandshakeMessage handshakeMessage;
@@ -13,7 +12,6 @@ public class Reader implements Runnable {
     public Reader(Socket s, int pid) {
         socket = s;
         peerID = pid;
-        //ID = id;
     }
 
     public Message getMessage() {
@@ -39,8 +37,6 @@ public class Reader implements Runnable {
                 message = (Message)obj;
                 System.out.println(peerID + " received message from " + handshakeMessage.getPeerID());
             }
-
-            
 
         } catch (IOException e) {
             e.printStackTrace();
