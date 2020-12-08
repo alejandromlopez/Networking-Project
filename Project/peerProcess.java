@@ -1,13 +1,12 @@
 
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 import java.io.*;
 import java.nio.file.*;
-import java.rmi.Remote;
 import java.lang.Math;
 import java.net.*;
 import java.util.HashMap;
-import java.util.concurrent.TimeUnit;
 
 public class peerProcess {
     private final int peerID;
@@ -21,15 +20,10 @@ public class peerProcess {
     private int numOfPieces;
     private int portNum;
     private ServerSocket server;
-    private static String wDD = System.getProperty("user.dir");
-    private static HashMap<Integer, Thread> sockets = new HashMap<Integer, Thread>();
-    // private static HashMap<Integer, Socket> sockets = new HashMap<Integer,
-    // Socket>();
+    private static HashMap<Integer, Socket> sockets = new HashMap<Integer, Socket>();
     private static HashMap<Integer, RemotePeerInfo> peers = new HashMap<Integer, RemotePeerInfo>();
-    HashMap<Integer, String> hm2 = new HashMap<Integer, String>();
-
+    private HashMap<Integer, String> neighbors = new HashMap<Integer, String>();
     private ObjectInputStream in;
-    private ObjectOutputStream out;
 
     public peerProcess(int pID) {
         peerID = pID;
@@ -60,7 +54,6 @@ public class peerProcess {
         String workingDir = System.getProperty("user.dir");
 
         // Creates the subdirectory for the peerProcess
-        // TODO: uncomment this
         File dir = new File(workingDir + "/peer_" + peerID);
         dir.mkdir();
 
@@ -88,13 +81,6 @@ public class peerProcess {
         fileName = prop.getProperty("FileName");
         fileSize = Integer.parseInt(prop.getProperty("FileSize"));
         pieceSize = Integer.parseInt(prop.getProperty("PieceSize"));
-
-        // System.out.println(numPreferredNeighbors);
-        // System.out.println(unchokingInterval);
-        // System.out.println(optimisticUnchokingInterval);
-        // System.out.println(fileName);
-        // System.out.println(fileSize);
-        // System.out.println(pieceSize);
 
         // Reading PeerInfo.cfg to adjust this peerProcess's bitfield
         Properties prop2 = new Properties();
@@ -163,8 +149,11 @@ public class peerProcess {
 
             RemotePeerInfo rpi = new RemotePeerInfo(ID, address, port);
             peers.put(ID, rpi);
-            if (peerID!=ID)
-                hm2.put(ID, blank);
+
+            if (peerID != ID) {
+                neighbors.put(ID, blank);
+            }
+
         } while (s.hasNext());
     }
 
@@ -175,28 +164,24 @@ public class peerProcess {
         numOfPieces = (int) Math.ceil(fSize / pSize);
     }
 
-    private void createSockets() {
+    private void establishConnections() {
         Socket socket = null;
         String workingDir = System.getProperty("user.dir");
-        HashMap<Integer, RemotePeerInfo> hiddenPeers = peers;
 
         Scanner s = null;
         try {
             s = new Scanner(new File(workingDir + "/PeerInfo.cfg"));
-
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
 
         try {
             server = new ServerSocket(portNum);
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException io) {
+            io.printStackTrace();
         }
 
-        HashMap<Integer, String> hm = new HashMap<Integer, String>();
         String line = "";
-        int count = 0;
 
         do {
             line = s.nextLine();
@@ -213,20 +198,16 @@ public class peerProcess {
             if (ID != peerID) {
                 try {
                     socket = new Socket(address, port);
+                    System.out.println(peerID + ": Connection established with " + address + " " + ID);
+
                     Handler h = new Handler(socket, peerID, ID);
                     Thread handler = new Thread(h);
-
                     handler.start();
 
-                    sockets.put(ID, handler);
-                    hm2.replace(ID, "sent");
-
-                    // System.out.println(peerID + " incremented count because of " + ID);
-
-                    System.out.println(peerID + ": Connection established with " + address + " " + ID);
-                    // hiddenPeers.remove(ID);
+                    sockets.put(ID, socket);
+                    neighbors.replace(ID, "sent");
                 } catch (Exception e) {
-                    // e.printStackTrace();
+                    e.printStackTrace();
                     System.out.println("peerProcess " + peerID + " socket error: " + e);
                 }
             } else {
@@ -235,18 +216,17 @@ public class peerProcess {
         } while (s.hasNext());
 
         Socket inSocket = null;
-
         while (true) {
             try {
                 boolean done = true;
-                for (String a:hm2.values()){
-                    if(a.equals("received"))
+                for (String neighborState : neighbors.values()) {
+                    if (neighborState.equals("received"))
                         continue;
                     else
                         done = false;
                 }
 
-                if (done){
+                if (done) {
                     System.out.println(peerID + " is done.");
                     break;
                 }
@@ -255,29 +235,28 @@ public class peerProcess {
 
                 in = new ObjectInputStream(inSocket.getInputStream());
                 HandshakeMessage input = (HandshakeMessage) in.readObject();
+                int pid = input.getPeerID();
 
-                if (hm2.get(input.getPeerID()).equals("sent")) {
-                    System.out.println(peerID + " confirmed from " + input.getPeerID());
-                    hm2.replace(input.getPeerID(), "sent", "received");
+                if (neighbors.get(pid).equals("sent")) {
+                    System.out.println(peerID + " confirmed from " + pid);
+                    neighbors.replace(pid, "sent", "received");
+
                     continue;
                 } else {
-                    System.out.println(peerID + " received from " + input.getPeerID() + ". "
-                    + peerID + " will now send handshake back");
-                    count++;
+                    System.out.println(
+                            peerID + " received from " + pid + ". " + peerID + " will now send handshake back");
                 }
 
-                hm2.replace(input.getPeerID(), "received");
+                neighbors.replace(pid, "received");
 
-                int pid = input.getPeerID();
                 String address = peers.get(pid).getAddress();
                 int port = peers.get(pid).getPort();
                 inSocket.close();
 
-                //System.out.println(peerID + " received message from " + pid + " in peerProcess");
-
                 inSocket = new Socket(address, port);
-                Handler h2 = new Handler(inSocket, peerID, pid);
-                Thread t = new Thread(h2);
+                sockets.put(pid, inSocket);
+                Handler handler2 = new Handler(inSocket, peerID, pid);
+                Thread t = new Thread(handler2);
                 t.start();
 
             } catch (Exception e) {
@@ -292,108 +271,72 @@ public class peerProcess {
             }
         }
 
-        // // TODO: comment this out when the server stays listening
-        // try {
-        //     TimeUnit.MILLISECONDS.sleep(10000);
-        // } catch (Exception ioException) {
-        //     ioException.printStackTrace();
+        try {
+            TimeUnit.MILLISECONDS.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        // for (Socket sock : sockets.values()) {
+        //     Reader bitfieldIn = new Reader(sock, peerID);
+        //     Thread rThread = new Thread(bitfieldIn);
+        //     rThread.start();
+
+        //     Bitfield b = new Bitfield(bitField);
+        //     Writer bitfieldOut = new Writer(b, sock, peerID);
+        //     Thread wThread = new Thread(bitfieldOut);
+        //     wThread.start();
         // }
 
-        
-        /*
-
-            START PROTOCOL
-
-            */
-    }
-
-    /*
-     * // Socket sOut = null; // ObjectOutputStream oos = null; // File dir = new
-     * File(workingDir);
-     * 
-     * // if (peerID == 1005) { // try { // sOut = new
-     * Socket("lin114-00.cise.ufl.edu", 9998); // // dir = new File(workingDir +
-     * "/1005"); // // dir.mkdir(); // oos = new
-     * ObjectOutputStream(sOut.getOutputStream()); // oos.writeObject(new
-     * HandshakeMessage(1005)); // oos.flush(); // oos.close(); // } catch
-     * (IOException e) { // e.printStackTrace(); // } finally { // try { //
-     * sOut.close(); // // dir = new File(workingDir + "/1005_closed"); // //
-     * dir.mkdir(); // } catch (Exception e) { // e.printStackTrace(); // // dir =
-     * new File(workingDir + "/in1005_" + e); // // dir.mkdir(); // } // } // }
-     * 
-     * // Socket s1 = null; // int count = 0;
-     * 
-     * // try { // server = new ServerSocket(portNum); // // dir = new
-     * File(workingDir + "/server_" + peerID); // // dir.mkdir();
-     * 
-     * // while (true) { // if (peerID != 1001 && peerID != 1005) { // break; // }
-     * // if (count == 5) { // break; // }
-     * 
-     * // s1 = server.accept(); // // dir = new File(workingDir + "/accepted_in_" +
-     * peerID); // // dir.mkdir();
-     * 
-     * // in = new ObjectInputStream(s1.getInputStream()); // // dir = new
-     * File(workingDir + "/instream_" + peerID); // // dir.mkdir();
-     * 
-     * // HandshakeMessage inMessage = (HandshakeMessage)in.readObject(); 
-     * // 
-     * // 
-     * // dir = new File(workingDir + "/inmsg_" + peerID); // // dir.mkdir();
-     * 
-     * // if (inMessage.getHandshakeHeader().equals("P2PFILESHARINGPROJ") &&
-     * (inMessage.getPeerID() == 1005 || inMessage.getPeerID() == 1001)) { // dir =
-     * new File(workingDir + "/" + peerID + "_rcvd_" + inMessage.getPeerID()); //
-     * dir.mkdir(); // } else { // break; // }
-     * 
-     * // // dir = new File(workingDir + "/port_to_send_to" + s1.getPort() +
-     * "at_address_"); // // dir.mkdir();
-     * 
-     * // s1 = new Socket("lin114-04.cise.ufl.edu", 9998);
-     * 
-     * // // dir = new File(workingDir + "/port_to_send_to" + s1.getPort() +
-     * "at_address_"); // // dir.mkdir();
-     * 
-     * // out = new ObjectOutputStream(s1.getOutputStream()); // //
-     * out.writeObject(new HandshakeMessage(1001)); // // out.flush(); //
-     * HandshakeMessage outMessage = new HandshakeMessage(peerID); //
-     * sendMessage(outMessage); // // dir = new File(workingDir + "/" + peerID +
-     * "_out_to_" + inMessage.getPeerID()); // // dir.mkdir();
-     * 
-     * // try { // TimeUnit.MILLISECONDS.sleep(10000); // } catch
-     * (InterruptedException e) { // e.printStackTrace(); // } // break; // } // }
-     * // // catch (IOException e1) { // // e1.printStackTrace(); // // } catch
-     * (ClassNotFoundException e2) { // // e2.printStackTrace(); // // } // catch
-     * (Exception e) { // // dir = new File(workingDir + "/pp_here1_" + peerID + "_"
-     * + e); // // dir.mkdir(); // } finally { // try { // in.close(); //
-     * s1.close(); // } catch (IOException e3) { // e3.printStackTrace(); // // dir
-     * = new File(workingDir + "/pp_here2_" + peerID + "_" + e3); // // dir.mkdir();
-     * // } // }
-     */
-
-    public void sendHandshake(HandshakeMessage msg) {
-        try {
-            out.writeObject(msg);
-            out.flush();
-        } catch (Exception ioException) {
-            ioException.printStackTrace();
-        }
-    }
-
-    public static void printThis(String a) {
-        System.out.println(a);
     }
 
     // Starts up the peerProcess and begins message delivery
     public static void main(String[] args) {
         // try {
-        //     System.setOut(new PrintStream(new FileOutputStream("log.txt")));
+        // System.setOut(new PrintStream(new FileOutputStream("log.txt")));
         // } catch (FileNotFoundException e) {
-        //     e.printStackTrace();
+        // e.printStackTrace();
         // }
 
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
-        pp.createSockets();
-        // pp.startProtocol();
+        pp.establishConnections();
+    }
 
+    public class Listener implements Runnable {
+        private boolean finish;
+        private ObjectInputStream in;
+
+        public Listener() {
+
+        }
+
+        public void run() {
+            finish = false;
+
+            while (!finish) {
+                try {
+                    Socket s = server.accept();
+
+                    in = new ObjectInputStream(s.getInputStream());
+                    Object inMessage = in.readObject();
+
+                    // if (inMessage instanceof HandshakeMessage) {
+                        
+                    // } else if (inMessage instanceof Bitfield) {
+
+                    // } else if (inMessage instanceof Interested) {
+
+                    // } else if (inMessage instanceof NotInterested) {
+
+                    // }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+                
+        }
     }
 }
