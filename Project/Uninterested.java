@@ -1,9 +1,15 @@
+import java.io.Serializable;
 
-
-public class Uninterested extends Message 
+public class Uninterested extends Message implements Serializable 
 {
-    public Uninterested()
+    private int peerID;
+    public Uninterested(int pid)
     {
-        super((byte) 3, null);
+        super((byte) 3);
+        peerID = pid;
+    }
+
+    public int getPID(){
+        return peerID;
     }
 }

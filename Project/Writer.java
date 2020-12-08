@@ -20,18 +20,19 @@ public class Writer implements Runnable {
         peerID = pid;
     }
 
-    public void sendMessage(HandshakeMessage hm) {
+    public void sendMessage() {
         try {
-            System.out.println(peerID + " starting output stream");
+            // System.out.println(peerID + " starting output stream");
             out = new ObjectOutputStream(socket.getOutputStream());
-            System.out.println(peerID + " created output stream");
+            // System.out.println(peerID + " created output stream");
             
-            if (message == null) {
+            if (handshakeMessage != null) {
                 out.writeObject(handshakeMessage);
                 System.out.println(peerID + " writing handshake");
             } else {
+                System.out.println(peerID + " writing message to port " + socket.isClosed());
                 out.writeObject(message);
-                System.out.println(peerID + " writine message");
+                System.out.println(peerID + " wrote message");
             }
 
             out.flush();
@@ -42,6 +43,6 @@ public class Writer implements Runnable {
     }
 
     public void run() {
-        sendMessage(handshakeMessage);
+        sendMessage();
     }
 }

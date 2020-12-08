@@ -1,9 +1,9 @@
-
+import java.io.Serializable;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public class Piece extends Message
+public class Piece extends Message implements Serializable 
 {
 
     public Piece(byte[] piecePayload) 

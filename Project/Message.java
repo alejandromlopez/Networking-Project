@@ -1,10 +1,10 @@
 
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 
-public class Message {
+public class Message implements Serializable {
     private int mLength;
     private byte mType;
     private byte[] mPayload;

@@ -1,6 +1,6 @@
+import java.io.Serializable;
 
-
-public class Choke extends Message 
+public class Choke extends Message implements Serializable 
 {
     public Choke()
     {

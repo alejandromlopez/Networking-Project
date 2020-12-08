@@ -17,6 +17,7 @@ public class peerProcess {
     private int fileSize;
     private int pieceSize;
     private byte[] bitField;
+    private boolean haveFile;
     private int numOfPieces;
     private int portNum;
     private ServerSocket server;
@@ -125,6 +126,7 @@ public class peerProcess {
                 bitField[i] = (byte) 255;
             }
             moveFile();
+            haveFile = true;
         }
 
         Scanner s = null;
@@ -271,22 +273,37 @@ public class peerProcess {
             }
         }
 
+        /* 
+        
+        
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        
+                        CHANGE CODE HERE AFTER COMPLETION OF PROJECT FOR HANDSHAKE TO USE LISTENER.
+        
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        
+        
+        */
+        Listener l = new Listener();
+        Thread t = new Thread(l);
+        t.start();
+
         try {
             TimeUnit.MILLISECONDS.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
-        // for (Socket sock : sockets.values()) {
-        //     Reader bitfieldIn = new Reader(sock, peerID);
-        //     Thread rThread = new Thread(bitfieldIn);
-        //     rThread.start();
+        if (haveFile){
+            for (Socket sock : sockets.values()) {
+                Bitfield b = new Bitfield(bitField, peerID);
+                Writer bitfieldOut = new Writer(b, sock, peerID);
+                Thread wThread = new Thread(bitfieldOut);
+                wThread.start();
+            }
+        }
 
-        //     Bitfield b = new Bitfield(bitField);
-        //     Writer bitfieldOut = new Writer(b, sock, peerID);
-        //     Thread wThread = new Thread(bitfieldOut);
-        //     wThread.start();
-        // }
+
 
     }
 
@@ -315,7 +332,13 @@ public class peerProcess {
 
             while (!finish) {
                 try {
+                    server.close();
+                    server = new ServerSocket(portNum);
+                    System.out.println(peerID + " is listening for messages.");
+                    System.out.println(server.getLocalPort() + " is the port the server is listening on for " + peerID);
                     Socket s = server.accept();
+                    System.out.println(peerID + "'s listener received a message.");
+
 
                     in = new ObjectInputStream(s.getInputStream());
                     Object inMessage = in.readObject();
@@ -333,11 +356,15 @@ public class peerProcess {
                     } 
                     //Interested
                     else if (inMessage instanceof Interested) {
-                        Interested i = (Interested) inMessage;
+                        Interested interested = (Interested) inMessage;
+                        System.out.println(peerID + " has received an interested message from " + interested.getPID());
+                        break;
                     } 
                     //Uninterested
                     else if (inMessage instanceof Uninterested) {
-                        Uninterested in = (Uninterested) inMessage;
+                        Uninterested uninterested = (Uninterested) inMessage;
+                        System.out.println(peerID + " has received an uninterested message from " + uninterested.getPID());
+                        break;
                     } 
                     //Have
                     else if (inMessage instanceof Have) {
@@ -346,7 +373,30 @@ public class peerProcess {
                     //Bitfield
                     else if (inMessage instanceof Bitfield) {
                         Bitfield b = (Bitfield) inMessage;
-                        
+                        boolean write = false;
+
+                        for (int i = 0; i < bitField.length;i++){
+                            b.getBitfield()[i] = (byte) 1;
+                            if(bitField[i] == b.getBitfield()[i])
+                                continue;
+                            else{
+                                Interested interested = new Interested(peerID);
+                                Writer w = new Writer(interested, sockets.get(b.getPID()), peerID);
+                                Thread t = new Thread(w);
+                                t.start();
+                                write = true;
+                                System.out.println(peerID + " has sent an interested message to " + b.getPID());
+                            }
+                        }
+
+                        if (!write){
+                            Uninterested uninterested = new Uninterested(peerID);
+                            Writer w = new Writer(uninterested, sockets.get(b.getPID()), peerID);
+                            Thread t = new Thread(w);
+                            t.start();
+                            System.out.println(peerID + " has sent an uninterested message to " + b.getPID());
+                        }
+                        break;
                     } 
                     //Request
                     else if (inMessage instanceof Request) {

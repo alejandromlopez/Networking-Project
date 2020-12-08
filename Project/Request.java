@@ -1,9 +1,9 @@
-
+import java.io.Serializable;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public class Request extends Message
+public class Request extends Message implements Serializable 
 {
     private int pieceIdx;
 
