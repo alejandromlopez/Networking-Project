@@ -1,8 +1,7 @@
 
 import java.lang.Math;
-import java.io.Serializable;
 
-public class Bitfield extends Message implements Serializable  {
+public class Bitfield extends Message {
     private byte[] bitfield;
     private int peerID;
 

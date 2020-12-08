@@ -1,7 +1,5 @@
-import java.io.Serializable;
 
-public class Interested extends Message implements Serializable 
-{
+public class Interested extends Message {
     private int peerID;
     public Interested(int pid)
     {

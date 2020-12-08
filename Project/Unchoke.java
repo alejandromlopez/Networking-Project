@@ -1,7 +1,5 @@
-import java.io.Serializable;
 
-public class Unchoke extends Message implements Serializable 
-{
+public class Unchoke extends Message {
     public Unchoke()
     {
         super((byte) 1, null);

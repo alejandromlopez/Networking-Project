@@ -21,10 +21,9 @@ public class peerProcess {
     private int numOfPieces;
     private int portNum;
     private ServerSocket server;
-    private static HashMap<Integer, Socket> sockets = new HashMap<Integer, Socket>();
+    public static HashMap<Integer, Socket> sockets = new HashMap<Integer, Socket>();
     private static HashMap<Integer, RemotePeerInfo> peers = new HashMap<Integer, RemotePeerInfo>();
     private HashMap<Integer, String> neighbors = new HashMap<Integer, String>();
-    private ObjectInputStream in;
 
     public peerProcess(int pID) {
         peerID = pID;
@@ -202,9 +201,12 @@ public class peerProcess {
                     socket = new Socket(address, port);
                     System.out.println(peerID + ": Connection established with " + address + " " + ID);
 
-                    Handler h = new Handler(socket, peerID, ID);
-                    Thread handler = new Thread(h);
-                    handler.start();
+                    // Handler h = new Handler(socket, peerID, ID);
+                    // Thread handler = new Thread(h);
+                    // handler.start();
+                    Writer w = new Writer(new HandshakeMessage(peerID), socket, peerID);
+                    Thread t = new Thread(w);
+                    t.start();
 
                     sockets.put(ID, socket);
                     neighbors.replace(ID, "sent");
@@ -217,94 +219,9 @@ public class peerProcess {
             }
         } while (s.hasNext());
 
-        Socket inSocket = null;
-        while (true) {
-            try {
-                boolean done = true;
-                for (String neighborState : neighbors.values()) {
-                    if (neighborState.equals("received"))
-                        continue;
-                    else
-                        done = false;
-                }
-
-                if (done) {
-                    System.out.println(peerID + " is done.");
-                    break;
-                }
-
-                inSocket = server.accept();
-
-                in = new ObjectInputStream(inSocket.getInputStream());
-                HandshakeMessage input = (HandshakeMessage) in.readObject();
-                int pid = input.getPeerID();
-
-                if (neighbors.get(pid).equals("sent")) {
-                    System.out.println(peerID + " confirmed from " + pid);
-                    neighbors.replace(pid, "sent", "received");
-
-                    continue;
-                } else {
-                    System.out.println(
-                            peerID + " received from " + pid + ". " + peerID + " will now send handshake back");
-                }
-
-                neighbors.replace(pid, "received");
-
-                String address = peers.get(pid).getAddress();
-                int port = peers.get(pid).getPort();
-                inSocket.close();
-
-                inSocket = new Socket(address, port);
-                sockets.put(pid, inSocket);
-                Handler handler2 = new Handler(inSocket, peerID, pid);
-                Thread t = new Thread(handler2);
-                t.start();
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.out.println("peerProcess " + peerID + " incoming error: " + e);
-                try {
-                    server.close();
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                }
-                break;
-            }
-        }
-
-        /* 
-        
-        
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        
-                        CHANGE CODE HERE AFTER COMPLETION OF PROJECT FOR HANDSHAKE TO USE LISTENER.
-        
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        
-        
-        */
         Listener l = new Listener();
         Thread t = new Thread(l);
         t.start();
-
-        try {
-            TimeUnit.MILLISECONDS.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        if (haveFile){
-            for (Socket sock : sockets.values()) {
-                Bitfield b = new Bitfield(bitField, peerID);
-                Writer bitfieldOut = new Writer(b, sock, peerID);
-                Thread wThread = new Thread(bitfieldOut);
-                wThread.start();
-            }
-        }
-
-
-
     }
 
     // Starts up the peerProcess and begins message delivery
@@ -332,47 +249,88 @@ public class peerProcess {
 
             while (!finish) {
                 try {
-                    server.close();
-                    server = new ServerSocket(portNum);
-                    System.out.println(peerID + " is listening for messages.");
-                    System.out.println(server.getLocalPort() + " is the port the server is listening on for " + peerID);
-                    Socket s = server.accept();
-                    System.out.println(peerID + "'s listener received a message.");
+                    boolean done = true;
+                    for (String neighborState : neighbors.values()) {
+                        if (neighborState.equals("received"))
+                            continue;
+                        else {
+                            done = false;
+                            //System.out.println(peerID + " " + neighbors.values());
+                        }
+                    }
+    
+                    if (done) {
+                        System.out.println(peerID + " is done.");
+                        if (haveFile) {
+                            for (Socket sock : sockets.values()) {
+                                Bitfield b = new Bitfield(bitField, peerID);
+                                Writer bitfieldOut = new Writer(b, sock, peerID);
+                                Thread wThread = new Thread(bitfieldOut);
+                                wThread.start();
+                            }
+                        }
+                    }
 
+                    //server.close();
+                    System.out.println(peerID + " is listening for messages");
+                    Socket s = server.accept();
+                    System.out.println(peerID + "'s listener received a message");
 
                     in = new ObjectInputStream(s.getInputStream());
                     Object inMessage = in.readObject();
 
+
                     if (inMessage instanceof HandshakeMessage) {
-                        //Already covered in establishConnections().
+                        HandshakeMessage handshake = (HandshakeMessage)inMessage;
+                        int pid = handshake.getPeerID();
+
+                        if (neighbors.get(pid).equals("sent")) {
+                            System.out.println(peerID + " confirmed from " + pid);
+                            neighbors.replace(pid, "sent", "received");
+                            continue;
+                        } else {
+                            System.out.println(peerID + " received from " + pid + ". " + peerID + " will now send handshake back");
+                        }
+        
+                        neighbors.replace(pid, "received");
+        
+                        String address = peers.get(pid).getAddress();
+                        int port = peers.get(pid).getPort();
+                        s.close();
+        
+                        s = new Socket(address, port);
+                        sockets.put(pid, s);
+                        Writer w = new Writer(new HandshakeMessage(peerID), s, peerID);
+                        Thread t = new Thread(w);
+                        t.start();
                     } 
                     //Choke
                     else if (inMessage instanceof Choke) {
-                        Choke c = (Choke) inMessage;
+                        Choke c = (Choke)inMessage;
                     } 
                     //Unchoke
                     else if (inMessage instanceof Unchoke) {
-                        Unchoke uc = (Unchoke) inMessage;
+                        Unchoke uc = (Unchoke)inMessage;
                     } 
                     //Interested
                     else if (inMessage instanceof Interested) {
-                        Interested interested = (Interested) inMessage;
+                        Interested interested = (Interested)inMessage;
                         System.out.println(peerID + " has received an interested message from " + interested.getPID());
                         break;
                     } 
                     //Uninterested
                     else if (inMessage instanceof Uninterested) {
-                        Uninterested uninterested = (Uninterested) inMessage;
+                        Uninterested uninterested = (Uninterested)inMessage;
                         System.out.println(peerID + " has received an uninterested message from " + uninterested.getPID());
                         break;
                     } 
                     //Have
                     else if (inMessage instanceof Have) {
-                        Have h = (Have) inMessage;
+                        Have h = (Have)inMessage;
                     } 
                     //Bitfield
                     else if (inMessage instanceof Bitfield) {
-                        Bitfield b = (Bitfield) inMessage;
+                        Bitfield b = (Bitfield)inMessage;
                         boolean write = false;
 
                         for (int i = 0; i < bitField.length;i++){
@@ -381,7 +339,8 @@ public class peerProcess {
                                 continue;
                             else{
                                 Interested interested = new Interested(peerID);
-                                Writer w = new Writer(interested, sockets.get(b.getPID()), peerID);
+                                int pid = b.getPID();
+                                Writer w = new Writer(interested, sockets.get(pid), peerID);
                                 Thread t = new Thread(w);
                                 t.start();
                                 write = true;
@@ -391,7 +350,8 @@ public class peerProcess {
 
                         if (!write){
                             Uninterested uninterested = new Uninterested(peerID);
-                            Writer w = new Writer(uninterested, sockets.get(b.getPID()), peerID);
+                            int pid = b.getPID();
+                            Writer w = new Writer(uninterested, sockets.get(pid), peerID);
                             Thread t = new Thread(w);
                             t.start();
                             System.out.println(peerID + " has sent an uninterested message to " + b.getPID());
@@ -400,11 +360,11 @@ public class peerProcess {
                     } 
                     //Request
                     else if (inMessage instanceof Request) {
-                        Request r = (Request) inMessage;
+                        Request r = (Request)inMessage;
                     } 
                     //Piece
                     else if (inMessage instanceof Piece) {
-                        Piece p = (Piece) inMessage;
+                        Piece p = (Piece)inMessage;
                     } else {
                         System.out.println(peerID + "'s LISTENER DID NOT RECEIVE A MESSAGE THAT IS KNOWN!!!");
                     }
