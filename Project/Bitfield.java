@@ -2,16 +2,22 @@
 import java.lang.Math;
 
 public class Bitfield extends Message {
-    public Bitfield(byte[] bitfield) {
-        super((byte)5, bitfield);
+    private byte[] bitfield;
+
+    public Bitfield(byte[] bfield) {
+        super((byte)5, bfield);
     }
 
-    public static byte[] update(byte[] bitfield, int pieceIdx) {
+    public static byte[] update(byte[] bfield, int pieceIdx) {
         int idx = (pieceIdx / 8);
-        int byteToInt = bitfield[idx];
+        int byteToInt = bfield[idx];
         int pow = pieceIdx % 8;
         byteToInt += (int) Math.pow(2, 8-pow);
-        bitfield[idx] = (byte) byteToInt;
+        bfield[idx] = (byte) byteToInt;
+        return bfield;
+    }
+
+    public byte[] getBitfield(){
         return bitfield;
     }
     

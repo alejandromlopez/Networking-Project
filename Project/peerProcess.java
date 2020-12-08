@@ -320,15 +320,44 @@ public class peerProcess {
                     in = new ObjectInputStream(s.getInputStream());
                     Object inMessage = in.readObject();
 
-                    // if (inMessage instanceof HandshakeMessage) {
+                    if (inMessage instanceof HandshakeMessage) {
+                        //Already covered in establishConnections().
+                    } 
+                    //Choke
+                    else if (inMessage instanceof Choke) {
+                        Choke c = (Choke) inMessage;
+                    } 
+                    //Unchoke
+                    else if (inMessage instanceof Unchoke) {
+                        Unchoke uc = (Unchoke) inMessage;
+                    } 
+                    //Interested
+                    else if (inMessage instanceof Interested) {
+                        Interested i = (Interested) inMessage;
+                    } 
+                    //Uninterested
+                    else if (inMessage instanceof Uninterested) {
+                        Uninterested in = (Uninterested) inMessage;
+                    } 
+                    //Have
+                    else if (inMessage instanceof Have) {
+                        Have h = (Have) inMessage;
+                    } 
+                    //Bitfield
+                    else if (inMessage instanceof Bitfield) {
+                        Bitfield b = (Bitfield) inMessage;
                         
-                    // } else if (inMessage instanceof Bitfield) {
-
-                    // } else if (inMessage instanceof Interested) {
-
-                    // } else if (inMessage instanceof NotInterested) {
-
-                    // }
+                    } 
+                    //Request
+                    else if (inMessage instanceof Request) {
+                        Request r = (Request) inMessage;
+                    } 
+                    //Piece
+                    else if (inMessage instanceof Piece) {
+                        Piece p = (Piece) inMessage;
+                    } else {
+                        System.out.println(peerID + "'s LISTENER DID NOT RECEIVE A MESSAGE THAT IS KNOWN!!!");
+                    }
 
                 } catch (IOException e) {
                     e.printStackTrace();
