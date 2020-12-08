@@ -10,13 +10,25 @@
  */
 
 public class RemotePeerInfo {
-	public String peerId;
+	public int peerID;
 	public String peerAddress;
-	public String peerPort;
+	public int peerPort;
 	
-	public RemotePeerInfo(String pId, String pAddress, String pPort) {
-		peerId = pId;
+	public RemotePeerInfo(int pId, String pAddress, int pPort) {
+		peerID = pId;
 		peerAddress = pAddress;
 		peerPort = pPort;
+	}
+
+	public int getPeerID() {
+		return peerID;
+	}
+
+	public String getAddress() {
+		return peerAddress;
+	}
+
+	public int getPort() {
+		return peerPort;
 	}
 }

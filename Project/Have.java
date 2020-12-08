@@ -1,10 +1,8 @@
 
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public class Have extends Message 
-{
+public class Have extends Message {
     private int pieceIdx;
 
     public Have(byte[] pieceIDIdx, int pieceID) 

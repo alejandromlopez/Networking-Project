@@ -1,7 +1,6 @@
-
-
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /*
  * The StartRemotePeers class begins remote peer processes. 
@@ -23,11 +22,8 @@ public class StartRemotePeers {
 			String workingDir = System.getProperty("user.dir");
 			BufferedReader in = new BufferedReader(new FileReader(workingDir + "/PeerInfo.cfg"));
 			while((st = in.readLine()) != null) {
-				
 				 String[] tokens = st.split("\\s+");
-			    
-			     peerInfoVector.addElement(new RemotePeerInfo(tokens[0], tokens[1], tokens[2]));
-			
+			     peerInfoVector.addElement(new RemotePeerInfo(Integer.parseInt(tokens[0]), tokens[1], Integer.parseInt(tokens[2])));
 			}
 			
 			in.close();
@@ -44,22 +40,24 @@ public class StartRemotePeers {
 			StartRemotePeers myStart = new StartRemotePeers();
 			myStart.getConfiguration();
 			String workingDir = "Desktop/Project";
+			// String workingDir = System.getProperty("user.dir");
 
 			// start clients at remote hosts
 			for (int i = 0; i < myStart.peerInfoVector.size(); i++) {
 				RemotePeerInfo pInfo = (RemotePeerInfo) myStart.peerInfoVector.elementAt(i);
 				
-				System.out.println("Start remote peer " + pInfo.peerId 
+				System.out.println("Start remote peer " + pInfo.peerID 
 								   + " at " + pInfo.peerAddress);
 
 				Runtime.getRuntime().exec("ssh " + username 
 										  + "@" + pInfo.peerAddress 
 										  + " && cd " + workingDir 
-										  + " && java peerProcess " + pInfo.peerId);
+										  + " && java peerProcess " + pInfo.peerID);
+				//TimeUnit.MILLISECONDS.sleep(1000);
 			}
 			System.out.println("Starting all remote peers has done." );
 		} catch (Exception ex) {
-			System.out.println(ex);
+			ex.printStackTrace();
 		}
 	}
 }

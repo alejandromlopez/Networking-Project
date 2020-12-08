@@ -1,5 +1,4 @@
 
 javac RemotePeerInfo.java StartRemotePeers.java
-javac Server.java Client.java
 javac peerProcess.java
 
