@@ -39,8 +39,8 @@ public class StartRemotePeers {
 		try {
 			StartRemotePeers myStart = new StartRemotePeers();
 			myStart.getConfiguration();
-			// String workingDir = "Desktop/Project";
-			String workingDir = System.getProperty("user.dir");
+			String workingDir = "Desktop/Project";
+			// String workingDir = System.getProperty("user.dir");
 
 			// start clients at remote hosts
 			for (int i = 0; i < myStart.peerInfoVector.size(); i++) {
@@ -53,6 +53,7 @@ public class StartRemotePeers {
 										  + "@" + pInfo.peerAddress 
 										  + " && cd " + workingDir 
 										  + " && java peerProcess " + pInfo.peerID);
+				TimeUnit.MILLISECONDS.sleep(1000);
 			}
 			System.out.println("Starting all remote peers has done." );
 		} catch (Exception ex) {
