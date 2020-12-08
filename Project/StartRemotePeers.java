@@ -10,7 +10,7 @@ public class StartRemotePeers {
 
 	private Vector<RemotePeerInfo> peerInfoVector;
 
-	private static final String username = "cj2";
+	private static final String username = "alopez";
 	
 	public void getConfiguration()
 	{
@@ -52,7 +52,7 @@ public class StartRemotePeers {
 				Runtime.getRuntime().exec("ssh " + username 
 										  + "@" + pInfo.peerAddress 
 										  + " && cd " + workingDir 
-										  + " && java peerProcess " + pInfo.peerID);
+										  + " && java peerProcess " + pInfo.peerID + " >> log.txt");
 				TimeUnit.MILLISECONDS.sleep(1000);
 			}
 			System.out.println("Starting all remote peers has done." );

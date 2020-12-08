@@ -16,7 +16,7 @@ public class peerProcess {
     private String fileName;
     private int fileSize;
     private int pieceSize;
-    private byte[] bitField;
+    private short bitField;
     private boolean haveFile;
     private int numOfPieces;
     private int portNum;
@@ -27,9 +27,9 @@ public class peerProcess {
 
     public peerProcess(int pID) {
         peerID = pID;
-        computeNumberOfPiece();
-        bitField = new byte[numOfPieces];
+        //bitField = new byte[numOfPieces];
         initialize();
+        computeNumberOfPiece();
     }
 
     // Moves the file from the current working directory to the specified
@@ -112,20 +112,26 @@ public class peerProcess {
         if (bit.equals("1")) {
             int leftover = numOfPieces % 8;
             int byteNum = 0;
-            for (int i = 0; leftover > i; i++) {
-                byteNum += (int) Math.pow(2, 8 - i);
-            }
+            bitField = (short)0b1111111111111111;
+            System.out.println("bitField is: " + bitField);
+            
 
-            for (int i = 0; i < bitField.length; i++) {
-                if (i == (bitField.length - 1)) {
-                    bitField[i] = (byte) byteNum;
-                    continue;
-                }
+            // for (int i = 0; leftover > i; i++) {
+            //     byteNum += (int) Math.pow(2, 8 - i);
+            // }
 
-                bitField[i] = (byte) 255;
-            }
+            // for (int i = 0; i < bitField.length; i++) {
+            //     if (i == (bitField.length - 1)) {
+            //         bitField[i] = (byte) byteNum;
+            //         continue;
+            //     }
+
+            //     bitField[i] = (byte) 255;
+            // }
             moveFile();
             haveFile = true;
+        } else {
+            bitField = 0;
         }
 
         Scanner s = null;
@@ -134,9 +140,6 @@ public class peerProcess {
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
-
-            dir = new File(workingDir + "/init_scanner_" + e);
-            dir.mkdir();
         }
 
         String line = "";
@@ -201,10 +204,7 @@ public class peerProcess {
                     socket = new Socket(address, port);
                     System.out.println(peerID + ": Connection established with " + address + " " + ID);
 
-                    // Handler h = new Handler(socket, peerID, ID);
-                    // Thread handler = new Thread(h);
-                    // handler.start();
-                    Writer w = new Writer(new HandshakeMessage(peerID), socket, peerID);
+                    Writer w = new Writer(new HandshakeMessage(peerID), socket, peerID, ID);
                     Thread t = new Thread(w);
                     t.start();
 
@@ -262,11 +262,11 @@ public class peerProcess {
                     if (done) {
                         System.out.println(peerID + " is done.");
                         if (haveFile) {
-                            for (Socket sock : sockets.values()) {
-                                Bitfield b = new Bitfield(bitField, peerID);
-                                Writer bitfieldOut = new Writer(b, sock, peerID);
-                                Thread wThread = new Thread(bitfieldOut);
-                                wThread.start();
+                            for (int pid : sockets.keySet()) {
+                                // Bitfield b = new Bitfield(bitField, peerID);
+                                // Writer bitfieldOut = new Writer(b, sockets.get(pid), peerID, pid);
+                                // Thread wThread = new Thread(bitfieldOut);
+                                // wThread.start();
                             }
                         }
                     }
@@ -300,7 +300,7 @@ public class peerProcess {
         
                         s = new Socket(address, port);
                         sockets.put(pid, s);
-                        Writer w = new Writer(new HandshakeMessage(peerID), s, peerID);
+                        Writer w = new Writer(new HandshakeMessage(peerID), s, peerID, pid);
                         Thread t = new Thread(w);
                         t.start();
                     } 
@@ -322,6 +322,9 @@ public class peerProcess {
                     else if (inMessage instanceof Uninterested) {
                         Uninterested uninterested = (Uninterested)inMessage;
                         System.out.println(peerID + " has received an uninterested message from " + uninterested.getPID());
+                        String workingDir = System.getProperty("user.dir");
+                        File dir = new File(workingDir + "/peer_" + " received uninterested");
+                        dir.mkdir();
                         break;
                     } 
                     //Have
@@ -333,25 +336,25 @@ public class peerProcess {
                         Bitfield b = (Bitfield)inMessage;
                         boolean write = false;
 
-                        for (int i = 0; i < bitField.length;i++){
-                            b.getBitfield()[i] = (byte) 1;
-                            if(bitField[i] == b.getBitfield()[i])
-                                continue;
-                            else{
-                                Interested interested = new Interested(peerID);
-                                int pid = b.getPID();
-                                Writer w = new Writer(interested, sockets.get(pid), peerID);
-                                Thread t = new Thread(w);
-                                t.start();
-                                write = true;
-                                System.out.println(peerID + " has sent an interested message to " + b.getPID());
-                            }
-                        }
+                        // for (int i = 0; i < bitField.length;i++){
+                        //     b.getBitfield()[i] = (byte) 1;
+                        //     if(bitField[i] == b.getBitfield()[i])
+                        //         continue;
+                        //     else{
+                        //         Interested interested = new Interested(peerID);
+                        //         int pid = b.getPID();
+                        //         Writer w = new Writer(interested, sockets.get(pid), peerID, pid);
+                        //         Thread t = new Thread(w);
+                        //         t.start();
+                        //         write = true;
+                        //         System.out.println(peerID + " has sent an interested message to " + b.getPID());
+                        //     }
+                        // }
 
                         if (!write){
                             Uninterested uninterested = new Uninterested(peerID);
                             int pid = b.getPID();
-                            Writer w = new Writer(uninterested, sockets.get(pid), peerID);
+                            Writer w = new Writer(uninterested, sockets.get(pid), peerID, pid);
                             Thread t = new Thread(w);
                             t.start();
                             System.out.println(peerID + " has sent an uninterested message to " + b.getPID());

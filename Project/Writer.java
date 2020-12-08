@@ -4,13 +4,13 @@ import java.net.*;
 
 public class Writer implements Runnable {
     private int peerID;
-    //private int ID;
+    private int ID;
     private Message message = null;
     private Socket socket;
     private HandshakeMessage handshakeMessage = null;
     private ObjectOutputStream out;
     
-    public Writer(Message m, Socket s, int pid) {
+    public Writer(Message m, Socket s, int pid, int id) {
         message = m;
         Socket nSocket = null;
         try {
@@ -24,21 +24,21 @@ public class Writer implements Runnable {
         }
 
         socket = nSocket;
+        //socket = s;
         peerID = pid;
-        //ID = id;
+        ID = id;
     }
 
-    public Writer(HandshakeMessage hm, Socket s, int pid) {
+    public Writer(HandshakeMessage hm, Socket s, int pid, int id) {
         handshakeMessage = hm;
         socket = s;
         peerID = pid;
-        //ID = id;
+        ID = id;
     }
 
     public void run() {
         try {
             //System.out.println(peerID + " starting output stream");
-            System.out.println(peerID + " socket is closed is equal to " + socket.isClosed());
             out = new ObjectOutputStream(socket.getOutputStream());
             //System.out.println(peerID + " created output stream");
             

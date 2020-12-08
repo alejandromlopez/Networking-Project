@@ -2,7 +2,7 @@
 import java.lang.Math;
 
 public class Bitfield extends Message {
-    private byte[] bitfield;
+    private short bitfield;
     private int peerID;
 
     public Bitfield(byte[] bfield, int pid) {
@@ -19,7 +19,7 @@ public class Bitfield extends Message {
         return bfield;
     }
 
-    public byte[] getBitfield(){
+    public short getBitfield(){
         return bitfield;
     }
 
