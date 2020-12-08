@@ -44,13 +44,13 @@ Then you can run java StartRemotePeers.
 - [x] Ensure that peer processes with a complete file actually contain the file before you start them
 
 ### Writing Log
-- [ ] TCP Connection
+- [X] TCP Connection
 - [ ] Change of preferred neighbors
 - [ ] Change of optimisticall unchoked neighbor
 - [ ] Unchoking
 - [ ] Choking
 - [ ] Receiving 'have' message
-- [ ] Receiving 'interested' message
-- [ ] Receiving 'not interested' message
+- [X] Receiving 'interested' message
+- [X] Receiving 'not interested' message
 - [ ] Downloading a piece
 - [ ] Completion of demo
