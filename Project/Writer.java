@@ -38,16 +38,16 @@ public class Writer implements Runnable {
     public void run() {
         try {
             //System.out.println(peerID + " starting output stream");
-            System.out.println(peerID + " socket is closed is equal to " + socket.isClosed());
+            //System.out.println(peerID + " socket is closed is equal to " + socket.isClosed());
             out = new ObjectOutputStream(socket.getOutputStream());
             //System.out.println(peerID + " created output stream");
             
             if (handshakeMessage != null) {
                 out.writeObject(handshakeMessage);
-                System.out.println(peerID + " wrote handshake");
+                //System.out.println(peerID + " wrote handshake");
             } else {
                 out.writeObject(message);
-                System.out.println(peerID + " wrote message");
+                //System.out.println(peerID + " wrote message");
             }
 
             out.flush();

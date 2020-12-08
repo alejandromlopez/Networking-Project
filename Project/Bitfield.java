@@ -8,8 +8,14 @@ public class Bitfield extends Message {
     public Bitfield(byte[] bfield, int pid) {
         super((byte)5, bfield);
         peerID = pid;
+        bitfield=bfield;
     }
 
+    //TODO: UPDATE MAY BE BROKEN 
+    //
+    //
+    //
+    //
     public static byte[] update(byte[] bfield, int pieceIdx) {
         int idx = (pieceIdx / 8);
         int byteToInt = bfield[idx];
