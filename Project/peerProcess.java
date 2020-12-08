@@ -31,9 +31,11 @@ public class peerProcess {
     private static HashMap<Integer, Integer> pieceData = new HashMap<Integer, Integer>();
     private HashMap<Integer, String> neighbors = new HashMap<Integer, String>();
     private HashMap<Integer, byte[]> peersBitfields = new HashMap<Integer, byte[]>();
+    private EventLog peerlog;
 
     public peerProcess(int pID) {
         peerID = pID;
+        peerlog = new EventLog(pID);
         initialize();
         tester = false;
     }
@@ -54,14 +56,30 @@ public class peerProcess {
         }
     }
 
+    private void moveLog() {
+        String workingDir = System.getProperty("user.dir");
+        Path source = new File("log_peer_" + peerID + ".log").toPath();
+        Path dest = new File(workingDir + "/peer_" + peerID + "/log_peer_" + peerID + ".log").toPath();
+
+        try {
+            Files.move(source, dest);
+        } catch (FileAlreadyExistsException e1) {
+            System.out.println("Log is already in this subdirectory");
+        } catch (Exception e2) {
+            e2.printStackTrace();
+        }
+    }
+
     // Read PeerInfo.cfg and Common.cfg and set all necessary variables and read all
     // necessary data
     private void initialize() {
         String workingDir = System.getProperty("user.dir");
 
         // Creates the subdirectory for the peerProcess
+        // Created logfile moves to subdirectory
         File dir = new File(workingDir + "/peer_" + peerID);
         dir.mkdir();
+        moveLog();
 
         // File path to Common.cfg to read from
         Properties prop = new Properties();
@@ -224,6 +242,7 @@ public class peerProcess {
                     socket = new Socket(address, port);
                     // socket2 = new Socket(address, port);
                     System.out.println(peerID + ": Connection established with " + address + " " + ID);
+                    peerlog.TCPConnectionTo(ID);
 
                     // Handler h = new Handler(socket, peerID, ID);
                     // Thread handler = new Thread(h);
@@ -326,6 +345,7 @@ public class peerProcess {
                             continue;
                         } else {
                             System.out.println(peerID + " received from " + pid + ". " + peerID + " will now send handshake back");
+                            peerlog.TCPConnectionFrom(pid);
                         }
         
                         neighbors.replace(pid, "received");
@@ -352,13 +372,13 @@ public class peerProcess {
                     else if (inMessage instanceof Interested) {
                         Interested interested = (Interested)inMessage;
                         System.out.println(peerID + " has received an interested message from " + interested.getPID());
-                        
+                        peerlog.recievingInterested(interested.getPID());
                     } 
                     //Uninterested
                     else if (inMessage instanceof Uninterested) {
                         Uninterested uninterested = (Uninterested)inMessage;
                         System.out.println(peerID + " has received an uninterested message from " + uninterested.getPID());
-                        
+                        peerlog.recievingNotInterested(uninterested.getPID());
                     } 
                     //Have
                     else if (inMessage instanceof Have) {
@@ -441,7 +461,7 @@ public class peerProcess {
                     e.printStackTrace();
                 }
             }
-                
+            peerlog.closeLogger();  
         }
     }
 
