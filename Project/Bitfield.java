@@ -8,7 +8,7 @@ public class Bitfield extends Message {
     public Bitfield(byte[] bfield, int pid) {
         super((byte)5, bfield);
         peerID = pid;
-        bitfield=bfield;
+        bitfield = bfield;
     }
 
     //TODO: UPDATE MAY BE BROKEN 

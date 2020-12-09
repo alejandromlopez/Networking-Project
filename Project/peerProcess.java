@@ -1,6 +1,7 @@
 
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 import java.io.*;
@@ -8,6 +9,7 @@ import java.nio.file.*;
 import java.lang.Math;
 import java.net.*;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class peerProcess {
     private static int peerID;
@@ -35,22 +37,24 @@ public class peerProcess {
     private HashMap<Integer, byte[]> peersBitfields = new HashMap<Integer, byte[]>();
     private static HashMap<Integer, Boolean> peersInterestedInMe = new HashMap<Integer, Boolean>();
     private static HashMap<Integer, Boolean> isChoke = new HashMap<Integer, Boolean>();
+    private Set<Integer> requests = new HashSet<Integer>();
     private EventLog peerlog;
+    private byte[][] pieces;
 
     public peerProcess(int pID) {
         peerID = pID;
         peerlog = new EventLog(pID);
         initialize();
-        tester = false;
-        
+        pieces = new byte[numOfPieces][pieceSize];
+        encodeFile();
     }
 
     // Moves the file from the current working directory to the specified
     // peerProcess subdirectory
     private void moveFile() {
         String workingDir = System.getProperty("user.dir");
-        Path source = new File("file.txt").toPath();
-        Path dest = new File(workingDir + "/peer_" + peerID + "/file.txt").toPath();
+        Path source = new File(fileName).toPath();
+        Path dest = new File(workingDir + "/peer_" + peerID + "/" + fileName).toPath();
 
         try {
             Files.copy(source, dest);
@@ -74,6 +78,40 @@ public class peerProcess {
             e2.printStackTrace();
         }
     }
+
+    private void encodeFile() {
+        String workingDir = System.getProperty("user.dir");
+        String path = workingDir + "/" + fileName;
+        byte[] allFileBytes = null;
+
+        // reads in the file and stores the contents in byte array allFileBytes
+        try {
+            File file = new File(path);
+            InputStream is = new FileInputStream(file);
+            allFileBytes = is.readAllBytes();
+
+            is.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        
+        // splits up allFileBytes into pieceSize portions, and places them inside of pieces
+        for (int i = 0; i < pieces.length; i++) {
+            byte[] piece = new byte[pieceSize];
+            
+            for (int j = 0; j < pieceSize; j++) {
+                if (((i * pieceSize) + j) >= allFileBytes.length) {
+                    break;
+                }
+
+                piece[j] = allFileBytes[(i * pieceSize) + j];
+            }
+            pieces[i] = piece;
+        }
+    }
+
 
     // Read PeerInfo.cfg and Common.cfg and set all necessary variables and read all
     // necessary data
@@ -174,9 +212,6 @@ public class peerProcess {
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
-
-            dir = new File(workingDir + "/init_scanner_" + e);
-            dir.mkdir();
         }
 
         String line = "";
@@ -211,8 +246,8 @@ public class peerProcess {
             bitFieldSize = numOfPieces / 8;
         else{
             bitFieldSize = (numOfPieces / 8) + 1;
-            areLeftovers=true;
-            numLeftover=a;
+            areLeftovers = true;
+            numLeftover = a;
         }
     }
 
@@ -255,10 +290,7 @@ public class peerProcess {
                     System.out.println(peerID + ": Connection established with " + address + " " + ID);
                     peerlog.TCPConnectionTo(ID);
 
-                    // Handler h = new Handler(socket, peerID, ID);
-                    // Thread handler = new Thread(h);
-                    // handler.start();
-                    Writer w = new Writer(new HandshakeMessage(peerID), socket, peerID);
+                    Writer w = new Writer(new HandshakeMessage(peerID), socket, peerID);//, ID);
                     Thread t = new Thread(w);
                     t.start();
 
@@ -286,7 +318,6 @@ public class peerProcess {
         // e.printStackTrace();
         // }
 
-        //Passing in pp to establish connections could fix socket problem
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
         pp.establishConnections();
         Listener l = pp.new Listener(pp);
@@ -304,6 +335,9 @@ public class peerProcess {
         private boolean bitFieldSent;
         private ObjectInputStream in;
         private peerProcess pp;
+        private HashMap<Integer, Boolean> isChockedBy = new HashMap<Integer, Boolean>();
+        private HashMap<Integer, Boolean> containsInterestingPieces = new HashMap<Integer, Boolean>();
+
 
         public Listener(peerProcess p) {
             pp = p;
@@ -311,10 +345,9 @@ public class peerProcess {
 
         public void run() {
             finish = false;
-            handshakeDone=false;
-            bitFieldSent=false;
+            handshakeDone = false;
+            bitFieldSent = false;
             int count = 0;
-            
 
             while (!finish) {
                 try {
@@ -324,7 +357,6 @@ public class peerProcess {
                             continue;
                         else {
                             done = false;
-                            //System.out.println(peerID + " " + neighbors.values());
                         }
                     }
     
@@ -336,7 +368,7 @@ public class peerProcess {
                                 Writer bitfieldOut = new Writer(b, sock, peerID);
                                 Thread wThread = new Thread(bitfieldOut);
                                 wThread.start();
-                                bitFieldSent=true;
+                                bitFieldSent = true;
                             }
                         } 
                         handshakeDone=true;
@@ -346,13 +378,30 @@ public class peerProcess {
                         timer2.schedule(new Optimistically(isChoke, pp), 0, optimisticUnchokingInterval*1000);
                     }
 
-                    //server.close();
                     //System.out.println(peerID + " is listening for messages");
                     Socket s = server.accept();
                     //System.out.println(peerID + "'s listener received a message");
 
                     in = new ObjectInputStream(s.getInputStream());
                     Object inMessage = in.readObject();
+                    String inAddress = s.getInetAddress().getHostName();
+                    int inPeerID = 0;
+                    byte[] inBitfield = peersBitfields.get(inPeerID);
+
+                    if (peersBitfields.containsKey(inPeerID)) {
+                        for (int i = 0; i < inBitfield.length; i++) {
+                            if (inBitfield[i] == 1 &&  bitField[i] == 0) {
+                                containsInterestingPieces.put(inPeerID, true);
+                            }
+                        }
+                    }
+                    
+
+                    for (Integer i : peers.keySet()) {
+                        if (peers.get(i).getAddress().equals(inAddress)) {
+                            inPeerID = i;
+                        }
+                    }
 
                     if (inMessage instanceof HandshakeMessage) {
                         HandshakeMessage handshake = (HandshakeMessage)inMessage;
@@ -375,44 +424,73 @@ public class peerProcess {
         
                         s = new Socket(address, port);
                         sockets.put(pid, s);
-                        Writer w = new Writer(new HandshakeMessage(peerID), s, peerID);
+
+                        Writer w = new Writer(new HandshakeMessage(peerID), s, peerID);//, pid);
                         Thread t = new Thread(w);
                         t.start();
                     } 
                     //Choke
                     else if (inMessage instanceof Choke) {
                         Choke c = (Choke)inMessage;
+                        isChockedBy.put(inPeerID, true);
                     } 
                     //Unchoke
                     else if (inMessage instanceof Unchoke) {
                         Unchoke uc = (Unchoke)inMessage;
+                        isChockedBy.put(inPeerID, false);
+
+                        for (int i = 0; i < bitField.length; i++) {
+                            byte mask = 1;
+
+                            for (int j = 0; j < 8; j++) {
+                                byte myBit = (byte)((bitField[i] >> (7 - j)) & mask);
+                                byte inBit = (byte)((inBitfield[i] >> (7 - j)) & mask);
+
+                                if (myBit == inBit) {
+                                    continue;
+                                } else if (myBit == 0 && inBit == 1) {
+                                    int pieceIdx = (8 * i) + j;
+
+                                    if (!requests.contains(pieceIdx)) {
+                                        requests.add(pieceIdx);
+
+                                        Writer w = new Writer(new Request(pieceIdx), sockets.get(inPeerID), peerID);
+                                        Thread t = new Thread(w);
+                                        t.start();
+                                    }
+                                }
+                            }
+                                
+                        }
                     } 
                     //Interested
                     else if (inMessage instanceof Interested) {
                         Interested interested = (Interested)inMessage;
                         System.out.println(peerID + " has received an interested message from " + interested.getPID());
                         peersInterestedInMe.replace(interested.getPID(), true);
-                        peerlog.recievingInterested(interested.getPID());
+                        peerlog.receivingInterested(interested.getPID());
                     } 
                     //Uninterested
                     else if (inMessage instanceof Uninterested) {
                         Uninterested uninterested = (Uninterested)inMessage;
                         System.out.println(peerID + " has received an uninterested message from " + uninterested.getPID());
-                        peerlog.recievingNotInterested(uninterested.getPID());
+                        peerlog.receivingNotInterested(uninterested.getPID());
                     } 
                     //Have
                     else if (inMessage instanceof Have) {
                         Have h = (Have)inMessage;
                         boolean write = false;
                         for (int i = 0; i < bitField.length;i++){
-                            if(bitField[i] == h.getBitfield()[i])
+                            if (bitField[i] == h.getBitfield()[i])
                                 continue;
-                            else{
+                            else {
                                 Interested interested = new Interested(peerID);
                                 int pid = h.getPID();
+
                                 Writer w = new Writer(interested, sockets.get(pid), peerID);
                                 Thread t = new Thread(w);
                                 t.start();
+
                                 write = true;
                                 System.out.println(peerID + " has sent an interested message to " + h.getPID());
                                 break;
@@ -422,18 +500,21 @@ public class peerProcess {
                         if (!write){
                             Uninterested uninterested = new Uninterested(peerID);
                             int pid = h.getPID();
+
                             Writer w = new Writer(uninterested, sockets.get(pid), peerID);
                             Thread t = new Thread(w);
                             t.start();
+
                             System.out.println(peerID + " has sent an uninterested message to " + h.getPID());
                         }
 
-                        //Updating the peersBitfield hashmap everytime a have message is recieved.
+                        //Updating the peersBitfield hashmap everytime a have message is received.
                         if(peersBitfields.containsKey(h.getPID())){
                             peersBitfields.replace(h.getPID(), h.getBitfield());
                         }
-                        else
+                        else {
                             peersBitfields.put(h.getPID(), h.getBitfield());
+                        }
                     } 
                     //Bitfield
                     else if (inMessage instanceof Bitfield) {
@@ -457,22 +538,59 @@ public class peerProcess {
                         if (!write){
                             Uninterested uninterested = new Uninterested(peerID);
                             int pid = b.getPID();
-                            Writer w = new Writer(uninterested, sockets.get(pid), peerID);
+                            Writer w = new Writer(uninterested, sockets.get(pid), peerID);//, pid);
                             Thread t = new Thread(w);
                             t.start();
                             System.out.println(peerID + " has sent an uninterested message to " + b.getPID());
                         }
-                        //break;
+
+                        if(peersBitfields.containsKey(b.getPID())){
+                            peersBitfields.replace(b.getPID(), b.getBitfield());
+                        }
+                        else
+                            peersBitfields.put(b.getPID(), b.getBitfield());
                     } 
                     //Request
                     else if (inMessage instanceof Request) {
                         Request r = (Request)inMessage;
+                        int p = r.getPieceIdx();
+
+                        Writer w = new Writer(new Piece(pieces[p], peerID), sockets.get(inPeerID), peerID);
+                        Thread t = new Thread(w);
+                        t.start();
                     } 
                     //Piece
                     else if (inMessage instanceof Piece) {
                         Piece p = (Piece)inMessage;
                         int temp = pieceData.get(p.getPID());
                         pieceData.replace(p.getPID(), (temp+1));
+
+                        for (int i = 0; i < bitField.length; i++) {
+                            byte mask = 1;
+
+                            for (int j = 0; j < 8; j++) {
+                                byte myBit = (byte)((bitField[i] >> (7 - j)) & mask);
+                                byte inBit = (byte)((inBitfield[i] >> (7 - j)) & mask);
+
+                                if (myBit == inBit) {
+                                    continue;
+                                } else if (myBit == 0 && inBit == 1) {
+                                    int pieceIdx = (8 * i) + j;
+
+                                    if (!requests.contains(pieceIdx)) {
+                                        requests.add(pieceIdx);
+
+                                        if (isChockedBy.get(inPeerID) || !containsInterestingPieces.get(inPeerID)){
+                                            continue;
+                                        }
+
+                                        Writer w = new Writer(new Request(pieceIdx), sockets.get(inPeerID), peerID);
+                                        Thread t = new Thread(w);
+                                        t.start();
+                                    }
+                                }
+                            }       
+                        }
                     } else {
                         System.out.println(peerID + "'s LISTENER DID NOT RECEIVE A MESSAGE THAT IS KNOWN!!!");
                     }
