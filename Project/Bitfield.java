@@ -2,13 +2,13 @@
 import java.lang.Math;
 
 public class Bitfield extends Message {
-    private short bitfield;
+    private byte[] bitfield;
     private int peerID;
 
     public Bitfield(byte[] bfield, int pid) {
         super((byte)5, bfield);
         peerID = pid;
-        bitfield=bfield;
+        bitfield = bfield;
     }
 
     //TODO: UPDATE MAY BE BROKEN 
@@ -25,7 +25,7 @@ public class Bitfield extends Message {
         return bfield;
     }
 
-    public short getBitfield(){
+    public byte[] getBitfield(){
         return bitfield;
     }
 

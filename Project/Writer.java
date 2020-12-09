@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.*;
+import java.util.HashMap;
 
 public class Writer implements Runnable {
     private int peerID;
@@ -10,7 +11,7 @@ public class Writer implements Runnable {
     private HandshakeMessage handshakeMessage = null;
     private ObjectOutputStream out;
     
-    public Writer(Message m, Socket s, int pid, int id) {
+    public Writer(Message m, Socket s, int pid) {//, int id) {
         message = m;
         Socket nSocket = null;
         try {
@@ -23,17 +24,18 @@ public class Writer implements Runnable {
             System.out.println(e);
         }
 
+
         socket = nSocket;
         //socket = s;
         peerID = pid;
-        ID = id;
+        //ID = id;
     }
 
-    public Writer(HandshakeMessage hm, Socket s, int pid, int id) {
+    public Writer(HandshakeMessage hm, Socket s, int pid) { //), int id) {
         handshakeMessage = hm;
         socket = s;
         peerID = pid;
-        ID = id;
+        //ID = id;
     }
 
     public void run() {
