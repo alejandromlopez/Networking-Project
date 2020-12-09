@@ -102,7 +102,6 @@ public class newNeighbors extends TimerTask {
                 rates.replace(highPeers[i], highRates[i]);
             }
 
-
             for (int p : rates.keySet()){
                 Unchoke unchoke = new Unchoke(peerID);
                 Writer w = new Writer(unchoke, pp.getSockets().get(p), peerID);

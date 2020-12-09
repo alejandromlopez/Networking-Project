@@ -1,7 +1,7 @@
 
-
-import java.text.SimpleDateFormat;  
-import java.util.Date;  
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.File;
@@ -106,21 +106,28 @@ public class EventLog {
     public void CompletionOfDownload()
     {
         final String msg = getHeader() + " has downloaded the complete file.";
-        System.out.println("1");
+        //System.out.println("1");
 
         try 
         {
             logger.write(msg);
             logger.flush();
-            System.out.println(msg);
+            //System.out.println(msg);
         } catch (IOException e) 
         {
             e.printStackTrace();
         }
     }
 
-    public void changeOfPrefNeighbor(int peerID, String neighbors){
-        final String msg = getHeader() + " has the preferred neighbors " + neighbors;
+    public void changeOfPrefNeighbor(ArrayList<Integer> neighbors){
+        String neighborlist = "";
+        for (int i = 0; i < neighbors.size(); i++){
+            if (i != neighbors.size()-1)
+                neighborlist = " " + neighbors.get(i) + ",";
+            else
+                neighborlist = " " + neighbors.get(i);
+        }
+        final String msg = getHeader() + " has the preferred neighbors" + neighborlist + ".";
         try 
         {
             logger.write(msg);

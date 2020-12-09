@@ -433,11 +433,13 @@ public class peerProcess {
                     else if (inMessage instanceof Choke) {
                         Choke c = (Choke)inMessage;
                         isChockedBy.put(inPeerID, true);
+                        peerlog.choking(c.getPID());
                     } 
                     //Unchoke
                     else if (inMessage instanceof Unchoke) {
                         Unchoke uc = (Unchoke)inMessage;
                         isChockedBy.put(inPeerID, false);
+                        peerlog.unchoking(uc.getPID());
 
                         for (int i = 0; i < bitField.length; i++) {
                             byte mask = 1;
@@ -564,6 +566,7 @@ public class peerProcess {
                         Piece p = (Piece)inMessage;
                         int temp = pieceData.get(p.getPID());
                         pieceData.replace(p.getPID(), (temp+1));
+                        //peerlog.downloadingAPiece(p.getPID(), pieceIdx, totalPieces);
 
                         for (int i = 0; i < bitField.length; i++) {
                             byte mask = 1;
@@ -601,7 +604,15 @@ public class peerProcess {
                     e.printStackTrace();
                 }
                 
-
+                //Checks if this peer is done
+                boolean fbf = true;
+                for (int i = 0; i < bitField.length; i++){
+                    if (bitField[i] == 0)
+                        fbf = false;
+                }
+                if (fbf == true)
+                    peerlog.CompletionOfDownload();
+                
                 //Checks to see if all the peers have all of the pieces
                 boolean allDone = false;
                 for (byte[] b : peersBitfields.values()){
