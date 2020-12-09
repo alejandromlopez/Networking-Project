@@ -53,4 +53,4 @@ Then you can run java StartRemotePeers.
 - [X] Receiving 'interested' message
 - [X] Receiving 'not interested' message
 - [ ] Downloading a piece
-- [X] Completion of demo
+- [X] Completion of download
