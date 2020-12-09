@@ -6,7 +6,7 @@ public class Piece extends Message {
 
     public Piece(byte[] piecePayload) 
     {
-        super((byte) 7, piecePayload);
+        super((byte)7, piecePayload);
     }
 
     public Piece(int pieceID, byte[] pieceIDIdx) 

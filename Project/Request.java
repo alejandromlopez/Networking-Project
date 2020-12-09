@@ -5,8 +5,8 @@ import java.nio.ByteOrder;
 public class Request extends Message {
     private int pieceIdx;
 
-    public Request(byte[] pieceIDIdx, int pieceID) {
-        super((byte)4, pieceIDIdx);
+    public Request(byte[] bitfield, int pieceID) {
+        super((byte)4, bitfield);
         pieceIdx = pieceID;
     }
 

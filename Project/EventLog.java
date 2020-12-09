@@ -60,9 +60,9 @@ public class EventLog {
         }
     }
 
-    public void recievingInterested(int peerID)
+    public void receivingInterested(int peerID)
     {
-        final String msg = getHeader() + " recieved the 'interested' message from " + peerID + ".\n";
+        final String msg = getHeader() + " received the 'interested' message from " + peerID + ".\n";
         try 
         {
             logger.write(msg);
@@ -73,9 +73,9 @@ public class EventLog {
         }
     }
 
-    public void recievingNotInterested(int peerID)
+    public void receivingNotInterested(int peerID)
     {
-        final String msg = getHeader() + " recieved the 'not interested' message from " + peerID + ".\n";
+        final String msg = getHeader() + " received the 'not interested' message from " + peerID + ".\n";
         try 
         {
             logger.write(msg);
@@ -88,7 +88,7 @@ public class EventLog {
     
     public void downloadingAPiece(int peerID, int pieceIdx, int totalPieces)
     {
-        final String msg = getHeader() + " has dowloaded the piece " + pieceIdx
+        final String msg = getHeader() + " has downloaded the piece " + pieceIdx
                                        + " from " + peerID 
                                        + ". Now the number of pieces it has is " + (totalPieces + 1)
                                        + ".";

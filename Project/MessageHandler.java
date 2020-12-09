@@ -23,12 +23,12 @@ public class MessageHandler {
             }
             //interested
             case 2:{
-                _eventLog.recievingInterested(_peerID);
+                _eventLog.receivingInterested(_peerID);
                 return null;
             }
             //not interested
             case 3:{
-                _eventLog.recievingNotInterested(_peerID);
+                _eventLog.receivingNotInterested(_peerID);
                 return null;
             }
             //have
