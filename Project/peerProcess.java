@@ -1,6 +1,7 @@
 
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 import java.io.*;
 import java.nio.file.*;
@@ -9,25 +10,32 @@ import java.net.*;
 import java.util.HashMap;
 
 public class peerProcess {
-    private final int peerID;
-    private int numPreferredNeighbors;
-    private int unchokingInterval;
+    private static int peerID;
+    private static int numPreferredNeighbors;
+    private static int unchokingInterval;
     private int optimisticUnchokingInterval;
     private String fileName;
     private int fileSize;
     private int pieceSize;
-    private byte[] bitField;
+    private static byte[] bitField;
     private boolean haveFile;
     private int numOfPieces;
     private int bitFieldSize;
+    private static int numLeftover;
+    private static boolean areLeftovers;
+    private boolean tester;
     private int portNum;
     private ServerSocket server;
     public static HashMap<Integer, Socket> sockets = new HashMap<Integer, Socket>();
     private static HashMap<Integer, RemotePeerInfo> peers = new HashMap<Integer, RemotePeerInfo>();
+    private static HashMap<Integer, Integer> pieceData = new HashMap<Integer, Integer>();
     private HashMap<Integer, String> neighbors = new HashMap<Integer, String>();
+    private HashMap<Integer, byte[]> peersBitfields = new HashMap<Integer, byte[]>();
+    private EventLog peerlog;
 
     public peerProcess(int pID) {
         peerID = pID;
+        peerlog = new EventLog(pID);
         initialize();
         computeNumberOfPiece();
     }
@@ -48,14 +56,30 @@ public class peerProcess {
         }
     }
 
+    private void moveLog() {
+        String workingDir = System.getProperty("user.dir");
+        Path source = new File("log_peer_" + peerID + ".log").toPath();
+        Path dest = new File(workingDir + "/peer_" + peerID + "/log_peer_" + peerID + ".log").toPath();
+
+        try {
+            Files.move(source, dest);
+        } catch (FileAlreadyExistsException e1) {
+            System.out.println("Log is already in this subdirectory");
+        } catch (Exception e2) {
+            e2.printStackTrace();
+        }
+    }
+
     // Read PeerInfo.cfg and Common.cfg and set all necessary variables and read all
     // necessary data
     private void initialize() {
         String workingDir = System.getProperty("user.dir");
 
         // Creates the subdirectory for the peerProcess
+        // Created logfile moves to subdirectory
         File dir = new File(workingDir + "/peer_" + peerID);
         dir.mkdir();
+        moveLog();
 
         // File path to Common.cfg to read from
         Properties prop = new Properties();
@@ -107,21 +131,21 @@ public class peerProcess {
 
         computeNumberOfPiece();
         bitField = new byte[bitFieldSize];
-        
+
         String property = prop2.getProperty("" + peerID);
         String bit = property.split(" ")[2];
 
         portNum = Integer.parseInt(property.split(" ")[1]);
-        
+
         if (bit.equals("1")) {
             int leftover = numOfPieces % 8;
             int byteNum = 0;
-            for (int i = 1; i<=leftover; i++) {
+            for (int i = 1; i <= leftover; i++) {
                 byteNum += (int) Math.pow(2, 8 - i);
             }
 
             for (int i = 0; i < bitField.length; i++) {
-                if (i == (bitField.length - 1)) {
+                if (areLeftovers && i == (bitField.length - 1)) {
                     bitField[i] = (byte) byteNum;
                     continue;
                 }
@@ -167,12 +191,15 @@ public class peerProcess {
     private void computeNumberOfPiece() {
         double fSize = fileSize;
         double pSize = pieceSize;
-        numOfPieces= (int) Math.ceil(fSize / pSize);
-        int a = numOfPieces%8;
+        numOfPieces = (int) Math.ceil(fSize / pSize);
+        int a = numOfPieces % 8;
         if (a == 0)
-            bitFieldSize = numOfPieces/8;
-        else 
-            bitFieldSize = (numOfPieces/8) + 1;
+            bitFieldSize = numOfPieces / 8;
+        else{
+            bitFieldSize = (numOfPieces / 8) + 1;
+            areLeftovers=true;
+            numLeftover=a;
+        }
     }
 
     private void establishConnections() {
@@ -212,6 +239,7 @@ public class peerProcess {
                     socket = new Socket(address, port);
                     // socket2 = new Socket(address, port);
                     System.out.println(peerID + ": Connection established with " + address + " " + ID);
+                    peerlog.TCPConnectionTo(ID);
 
                     Writer w = new Writer(new HandshakeMessage(peerID), socket, peerID);//, ID);
                     Thread t = new Thread(w);
@@ -241,8 +269,13 @@ public class peerProcess {
         // e.printStackTrace();
         // }
 
+        //Passing in pp to establish connections could fix socket problem
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
         pp.establishConnections();
+        Timer timer = new Timer();
+        timer.schedule(new newNeighbors(numPreferredNeighbors, unchokingInterval, peers, bitField, peerID, areLeftovers, numLeftover, pp), 0, unchokingInterval * 1000);
+        Timer timer2 = new Timer();
+        //timer.schedule()
     }
 
     public class Listener implements Runnable {
@@ -311,6 +344,7 @@ public class peerProcess {
                             continue;
                         } else {
                             System.out.println(peerID + " received from " + pid + ". " + peerID + " will now send handshake back");
+                            peerlog.TCPConnectionFrom(pid);
                         }
         
                         neighbors.replace(pid, "received");
@@ -338,20 +372,48 @@ public class peerProcess {
                     else if (inMessage instanceof Interested) {
                         Interested interested = (Interested)inMessage;
                         System.out.println(peerID + " has received an interested message from " + interested.getPID());
-                        
+                        peerlog.recievingInterested(interested.getPID());
                     } 
                     //Uninterested
                     else if (inMessage instanceof Uninterested) {
                         Uninterested uninterested = (Uninterested)inMessage;
                         System.out.println(peerID + " has received an uninterested message from " + uninterested.getPID());
-                        String workingDir = System.getProperty("user.dir");
-                        File dir = new File(workingDir + "/peer_" + " received uninterested");
-                        dir.mkdir();
-                        break;
+                        peerlog.recievingNotInterested(uninterested.getPID());
                     } 
                     //Have
                     else if (inMessage instanceof Have) {
                         Have h = (Have)inMessage;
+                        boolean write = false;
+                        for (int i = 0; i < bitField.length;i++){
+                            if(bitField[i] == h.getBitfield()[i])
+                                continue;
+                            else{
+                                Interested interested = new Interested(peerID);
+                                int pid = h.getPID();
+                                Writer w = new Writer(interested, sockets.get(pid), peerID);
+                                Thread t = new Thread(w);
+                                t.start();
+                                write = true;
+                                System.out.println(peerID + " has sent an interested message to " + h.getPID());
+                                break;
+                            }
+                        }
+
+                        if (!write){
+                            Uninterested uninterested = new Uninterested(peerID);
+                            int pid = h.getPID();
+                            Writer w = new Writer(uninterested, sockets.get(pid), peerID);
+                            Thread t = new Thread(w);
+                            t.start();
+                            System.out.println(peerID + " has sent an uninterested message to " + h.getPID());
+                        }
+
+                        //Updating the peersBitfield hashmap everytime a have message is recieved.
+                        if(peersBitfields.containsKey(h.getPID())){
+                            peersBitfields.replace(h.getPID(), h.getBitfield());
+                        }
+                        else
+                            peersBitfields.put(h.getPID(), h.getBitfield());
                     } 
                     //Bitfield
                     else if (inMessage instanceof Bitfield) {
@@ -399,7 +461,20 @@ public class peerProcess {
                     e.printStackTrace();
                 }
             }
-                
+            peerlog.closeLogger();  
         }
     }
+
+    public boolean getTester(){
+        return tester;
+    }
+
+    public HashMap<Integer, Integer> getPieceData(){
+        return pieceData;
+    }
+
+    public void setPieceData(HashMap<Integer, Integer> p){
+        pieceData = p;
+    }
+
 }
