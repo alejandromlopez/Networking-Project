@@ -39,7 +39,8 @@ public class newNeighbors extends TimerTask {
         for (RemotePeerInfo p : peers.values()){
             int numPieces = pp.getPieceData().get(p.getPeerID());
             double rate = (double)numPieces / unchockingInterval;
-            rates.put(p.getPeerID(), rate);
+            if (p.getPeerID()!=peerID)
+                rates.put(p.getPeerID(), rate);
         }
 
         //Used to assign complete.
@@ -110,7 +111,7 @@ public class newNeighbors extends TimerTask {
             }
 
             for (int p : peers.keySet()){
-                if (rates.containsKey(p) || pp.getCurrentOptUnchoked() == p){
+                if ((rates.containsKey(p) || pp.getCurrentOptUnchoked() == p) || p == peerID){
                     continue;
                 }
                 Choke choke = new Choke(peerID);
@@ -123,7 +124,7 @@ public class newNeighbors extends TimerTask {
         } else {
             //Compute neighbors randomly.
             HashMap<Integer, Integer> sentAlready = new HashMap<Integer, Integer>();
-            pp.getPeersInterestedInMe();
+            // pp.getPeersInterestedInMe();
             int[] peerIDInInterested = new int[pp.getPeersInterestedInMe().size()];
             int idx = 0;
             for(int p : pp.getPeersInterestedInMe().keySet()){

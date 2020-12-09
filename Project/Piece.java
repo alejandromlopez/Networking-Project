@@ -4,14 +4,18 @@ import java.nio.ByteOrder;
 
 public class Piece extends Message {
 
-    public Piece(byte[] piecePayload) 
+    private int peerID;
+
+    public Piece(byte[] piecePayload, int pid) 
     {
         super((byte) 7, piecePayload);
+        peerID=pid;
     }
 
-    public Piece(int pieceID, byte[] pieceIDIdx) 
+    public Piece(int pieceID, byte[] pieceIDIdx, int pid) 
     {
         super((byte) 7, AllForOne(pieceID, pieceIDIdx));
+        peerID=pid;
     }
 
     //Used to concatenate the pieceID with toBeAdded to create the piece payload.
@@ -32,4 +36,8 @@ public class Piece extends Message {
         return temp;
     }
     
+    public int getPID(){
+        return peerID;
+    }
+
 }

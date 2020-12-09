@@ -4,7 +4,7 @@ public class Choke extends Message {
     
     public Choke(int pid)
     {
-        super((byte) 0, null);
+        super((byte) 0);
         peerID = pid;
     }
 

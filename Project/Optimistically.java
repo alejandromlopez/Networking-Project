@@ -18,11 +18,13 @@ public class Optimistically extends TimerTask{
             currentlyChoked.add(pid);
         }
 
-        int ran = (int) (Math.random() * isChoked.size());
-        Unchoke unchoke = new Unchoke(currentlyChoked.get(ran));
-        Writer w = new Writer(unchoke, pp.getSockets().get(currentlyChoked.get(ran)), currentlyChoked.get(ran));
-        Thread t = new Thread(w);
-        t.start();
-        pp.setCurrentOptUnchoked(currentlyChoked.get(ran));
+        if (currentlyChoked.size() != 0){
+            int ran = (int) (Math.random() * isChoked.size());
+            Unchoke unchoke = new Unchoke(currentlyChoked.get(ran));
+            Writer w = new Writer(unchoke, pp.getSockets().get(currentlyChoked.get(ran)), currentlyChoked.get(ran));
+            Thread t = new Thread(w);
+            t.start();
+            pp.setCurrentOptUnchoked(currentlyChoked.get(ran));
+        }
     }
 }

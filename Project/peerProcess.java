@@ -186,7 +186,9 @@ public class peerProcess {
 
             RemotePeerInfo rpi = new RemotePeerInfo(ID, address, port);
             peers.put(ID, rpi);
-            peersInterestedInMe.put(ID, false);
+            if (peerID != ID)
+                peersInterestedInMe.put(ID, false);
+            pieceData.put(ID, 0);
 
             if (peerID != ID) {
                 neighbors.put(ID, blank);
@@ -267,9 +269,9 @@ public class peerProcess {
             }
         } while (s.hasNext());
 
-        Listener l = new Listener();
-        Thread t = new Thread(l);
-        t.start();
+        // Listener l = new Listener(this);
+        // Thread t = new Thread(l);
+        // t.start();
     }
 
     // Starts up the peerProcess and begins message delivery
@@ -283,10 +285,13 @@ public class peerProcess {
         //Passing in pp to establish connections could fix socket problem
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
         pp.establishConnections();
-        Timer timer = new Timer();
-        timer.schedule(new newNeighbors(numPreferredNeighbors, unchokingInterval, peers, bitField, peerID, areLeftovers, numLeftover, pp), 0, unchokingInterval * 1000);
-        Timer timer2 = new Timer();
-        timer2.schedule(new Optimistically(isChoke, pp), 0, optimisticUnchokingInterval*1000);
+        Listener l = pp.new Listener(pp);
+        Thread t = new Thread(l);
+        t.start();
+        // Timer timer = new Timer();
+        // timer.schedule(new newNeighbors(numPreferredNeighbors, unchokingInterval, peers, bitField, peerID, areLeftovers, numLeftover, pp), 0, unchokingInterval * 1000);
+        // Timer timer2 = new Timer();
+        // timer2.schedule(new Optimistically(isChoke, pp), 0, optimisticUnchokingInterval*1000);
     }
 
     public class Listener implements Runnable {
@@ -294,9 +299,10 @@ public class peerProcess {
         private boolean handshakeDone;
         private boolean bitFieldSent;
         private ObjectInputStream in;
+        private peerProcess pp;
 
-        public Listener() {
-
+        public Listener(peerProcess p) {
+            pp = p;
         }
 
         public void run() {
@@ -328,8 +334,12 @@ public class peerProcess {
                                 wThread.start();
                                 bitFieldSent=true;
                             }
-                        }
+                        } 
                         handshakeDone=true;
+                        Timer timer = new Timer();
+                        timer.schedule(new newNeighbors(numPreferredNeighbors, unchokingInterval, peers, bitField, peerID, areLeftovers, numLeftover, pp), 0, unchokingInterval * 1000);
+                        Timer timer2 = new Timer();
+                        timer2.schedule(new Optimistically(isChoke, pp), 0, optimisticUnchokingInterval*1000);
                     }
 
                     //server.close();
@@ -457,6 +467,8 @@ public class peerProcess {
                     //Piece
                     else if (inMessage instanceof Piece) {
                         Piece p = (Piece)inMessage;
+                        int temp = pieceData.get(p.getPID());
+                        pieceData.replace(p.getPID(), (temp+1));
                     } else {
                         System.out.println(peerID + "'s LISTENER DID NOT RECEIVE A MESSAGE THAT IS KNOWN!!!");
                     }
