@@ -21,7 +21,7 @@ public class newNeighbors extends TimerTask {
     private EventLog peerlog;
 
     public newNeighbors(int pn, int interval, HashMap<Integer, RemotePeerInfo> prs, byte[] b, int pid, boolean leftover,
-            int numLeft, peerProcess p) {
+            int numLeft, peerProcess p, EventLog pl) {
         prefNeighbors = pn;
         unchockingInterval = interval;
         peers = prs;
@@ -32,7 +32,7 @@ public class newNeighbors extends TimerTask {
         pp = p;
         highPeers = new int[pn];
         highRates = new double[pn];
-        peerlog = new EventLog(peerID);
+        peerlog = pl;
     }
 
     
@@ -143,6 +143,7 @@ public class newNeighbors extends TimerTask {
                     int ran = (int) Math.random()*prefNeighbors;
                     
                     if(!sentAlready.containsKey(peerIDInInterested[ran])){
+                        newPrefNeighbor.add(peerIDInInterested[ran]);
                         Unchoke unchoke = new Unchoke(peerID);
                         Writer w = new Writer(unchoke, pp.getSockets().get(peerIDInInterested[ran]), peerID);
                         Thread t = new Thread(w);
@@ -152,6 +153,7 @@ public class newNeighbors extends TimerTask {
                     }
                 }
             }
+            peerlog.changeOfPrefNeighbor(newPrefNeighbor);
             int[] notSent = new int[pp.getPeersInterestedInMe().size() - sentAlready.size()];
             int count=0;
             for (int p : pp.getPeersInterestedInMe().keySet()){

@@ -11,11 +11,11 @@ public class Optimistically extends TimerTask{
     private EventLog peerlog;
     
     
-    public Optimistically(HashMap<Integer, Boolean> choke, peerProcess p, int pid){
+    public Optimistically(HashMap<Integer, Boolean> choke, peerProcess p, int pid, EventLog pl){
         isChoked = choke;
         pp = p;
         peerID = pid;
-        peerlog = new EventLog(peerID);
+        peerlog = pl;
     }
 
     public void run(){

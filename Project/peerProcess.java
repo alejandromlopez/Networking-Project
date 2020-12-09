@@ -376,9 +376,10 @@ public class peerProcess {
                         } 
                         handshakeDone=true;
                         Timer timer = new Timer();
-                        timer.schedule(new newNeighbors(numPreferredNeighbors, unchokingInterval, peers, bitField, peerID, areLeftovers, numLeftover, pp), 0, unchokingInterval * 1000);
+                        timer.schedule(new newNeighbors(numPreferredNeighbors, unchokingInterval, peers, bitField, peerID, 
+                                        areLeftovers, numLeftover, pp, peerlog), 0, unchokingInterval * 1000);
                         Timer timer2 = new Timer();
-                        timer2.schedule(new Optimistically(isChoke, pp, peerID), 0, optimisticUnchokingInterval*1000);
+                        timer2.schedule(new Optimistically(isChoke, pp, peerID, peerlog), 0, optimisticUnchokingInterval*1000);
                     }
 
                     // if (peersBitfields.size()==1){
@@ -465,7 +466,7 @@ public class peerProcess {
                                     if (!requests.contains(pieceIdx)) {
                                         requests.add(pieceIdx);
 
-                                        Writer w = new Writer(new Request(pieceIdx, peerID), sockets.get(uc.getPID()), peerID);
+                                        Writer w = new Writer(new Request(bitField, pieceIdx, peerID), sockets.get(uc.getPID()), peerID);
                                         Thread t = new Thread(w);
                                         t.start();
                                     }
@@ -567,24 +568,45 @@ public class peerProcess {
                         Request r = (Request)inMessage;
                         int p = r.getPieceIdx();
 
-                        Writer w = new Writer(new Piece(pieces[p], peerID, r.getPieceIdx()), sockets.get(r.getPID()), peerID);
+                        Writer w = new Writer(new Piece(bitField, pieces[p], peerID, r.getPieceIdx()), sockets.get(r.getPID()), peerID);
                         Thread t = new Thread(w);
                         t.start();
                     } 
                     //Piece
                     else if (inMessage instanceof Piece) {
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+
+
+                                            PIECE IS NEVER SAVED SO A PEER NEVER ACTUALLY HAS THE FILE
+
+
+*/
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                         Piece p = (Piece)inMessage;
                         inBitfield = peersBitfields.get(p.getPID());
+
+                        //Used later in newNeighbors to calc rates
                         int temp = pieceData.get(p.getPID());
                         pieceData.replace(p.getPID(), (temp+1));
+
                         //peerlog.downloadingAPiece(p.getPID(), pieceIdx, totalPieces);
 
-                        for (Socket sock : sockets.values()){
-                            Writer w = new Writer(new Have(p.getPieceID(), peerID), sock, peerID);
-                            Thread t = new Thread(w);
-                            t.start();
-                        }
+                        // for (Socket sock : sockets.values()){
+                        //     Writer w = new Writer(new Have(bitField, p.getPieceID(), peerID), sock, peerID);
+                        //     Thread t = new Thread(w);
+                        //     t.start();
+                        // }
 
+                        bitField = update(bitField, p.getPieceID());
+                        // System.out.print("Bitfield after piece " + p.getPieceID() + " was received is ");
+                        // for (int k = 0; k < bitField.length; k++){
+                        //     System.out.print(bitField[k] + " ");
+                        // }
+                        // System.out.println("");
+
+
+                        boolean toBreak= false;
                         for (int i = 0; i < bitField.length; i++) {
                             byte mask = 1;
 
@@ -596,7 +618,13 @@ public class peerProcess {
                                     continue;
                                 } else if (myBit == 0 && inBit == 1) {
                                     int pieceIdx = (8 * i) + j;
-
+                                    // bitField = update(bitField, p.getPieceID());
+                                    // System.out.print("Bitfield after piece " + p.getPieceID() + " was received is ");
+                                    // for (int k = 0; k < bitField.length; k++){
+                                    //     System.out.print(bitField[k] + " ");
+                                    // }
+                                    // System.out.println("");
+                                    
                                     if (!requests.contains(pieceIdx)) {
                                         requests.add(pieceIdx);
 
@@ -604,12 +632,22 @@ public class peerProcess {
                                             continue;
                                         }
 
-                                        Writer w = new Writer(new Request(pieceIdx, peerID), sockets.get(p.getPID()), peerID);
+                                        Writer w = new Writer(new Request(bitField, pieceIdx, peerID), sockets.get(p.getPID()), peerID);
                                         Thread t = new Thread(w);
                                         t.start();
+                                        toBreak = true;
+                                        break;
                                     }
                                 }
-                            }       
+                            }  
+                            if (toBreak)
+                                break;     
+                        }
+                        
+                        for (Socket sock : sockets.values()){
+                            Writer w = new Writer(new Have(bitField, p.getPieceID(), peerID), sock, peerID);
+                            Thread t = new Thread(w);
+                            t.start();
                         }
                     } else {
                         System.out.println(peerID + "'s LISTENER DID NOT RECEIVE A MESSAGE THAT IS KNOWN!!!");
@@ -622,13 +660,21 @@ public class peerProcess {
                 }
                 
                 //Checks if this peer is done
-                boolean fbf = true;
+                // boolean fbf = true;
+                // for (int i = 0; i < bitField.length; i++){
+                //     if (bitField[i] == 0)
+                //         fbf = false;
+                // }
+                boolean areEqual = true;
                 for (int i = 0; i < bitField.length; i++){
-                    if (bitField[i] == 0)
-                        fbf = false;
+                    if (bitField[i] == fullBitField[i])
+                        continue;
+                    areEqual = false;
                 }
-                if (fbf == true)
+                if (areEqual && count==0){
                     peerlog.CompletionOfDownload();
+                    count++;
+                }
                 
                 //Checks to see if all the peers have all of the pieces
                 boolean allDone = false;
@@ -681,6 +727,15 @@ public class peerProcess {
 
     public void setIsChoke(HashMap<Integer, Boolean> choking){
         isChoke = choking;
+    }
+
+    public static byte[] update(byte[] bfield, int pieceIdx) {
+        int idx = (pieceIdx / 8);
+        int byteToInt = bfield[idx];
+        int pow = pieceIdx % 8;
+        byteToInt += (int) Math.pow(2, 7-pow);
+        bfield[idx] = (byte) byteToInt;
+        return bfield;
     }
 
 }
