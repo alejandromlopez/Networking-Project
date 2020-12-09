@@ -20,9 +20,9 @@ Then you can run java StartRemotePeers.
 - [x] piece (maybe)
 
 ## Protocols
-- [ ] handshake and bitfield
-- [ ] choke and unchoke
-- [ ] interested and not interested
+- [X] handshake and bitfield
+- [X] choke and unchoke
+- [X] interested and not interested
 - [ ] request and piece
 
 ## Implementation Specifics
@@ -31,7 +31,7 @@ Then you can run java StartRemotePeers.
 - [x] PeerInfo.cfg
 
 ### Peer Process
-- [ ] Peer that started should make TCP connections to all peers started before it
+- [X] Peer that started should make TCP connections to all peers started before it
 - [ ] When connected to at least one peer, starts to exchange pieces
 - [ ] Peer terminates when it finds out that all peers have downloaded the complete file
 
@@ -45,12 +45,12 @@ Then you can run java StartRemotePeers.
 
 ### Writing Log
 - [X] TCP Connection
-- [ ] Change of preferred neighbors
-- [ ] Change of optimisticall unchoked neighbor
-- [ ] Unchoking
-- [ ] Choking
+- [X] Change of preferred neighbors
+- [X] Change of optimistically unchoked neighbor
+- [X] Unchoking
+- [X] Choking
 - [ ] Receiving 'have' message
 - [X] Receiving 'interested' message
 - [X] Receiving 'not interested' message
 - [ ] Downloading a piece
-- [ ] Completion of demo
+- [X] Completion of demo
