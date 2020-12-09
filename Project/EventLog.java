@@ -10,12 +10,13 @@ import java.io.File;
 
 public class EventLog {
     private final String _header;
+    private Date date;
     private File log;
     private FileWriter logger;
 
     public EventLog(int peerID) {
         SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-        Date date = new Date();
+        date = new Date();
         _header = "[" + formatter.format(date) + "]" + ": Peer " + peerID;
         try{
            log = new File("log_peer_" + peerID + ".log");
@@ -35,14 +36,25 @@ public class EventLog {
             e.printStackTrace();
         }
     }
-    public void TCPConnection(int peerID){
-        final String msg = getHeader() + " makes a connection to Peer " + peerID;
+    public void TCPConnectionTo(int peerID){
+        final String msg = getHeader() + " makes a connection to Peer " + peerID + "\n";
         try 
         {
             logger.write(msg);
             logger.flush();
-            logger.close();
         } catch (IOException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public void TCPConnectionFrom(int peerID){
+        final String msg = getHeader() + " makes a connection from Peer " + peerID + "\n";
+        try
+        {
+            logger.write(msg);
+            logger.flush();
+        }catch (IOException e)
         {
             e.printStackTrace();
         }
@@ -50,12 +62,11 @@ public class EventLog {
 
     public void recievingInterested(int peerID)
     {
-        final String msg = getHeader() + " recieved the not 'interested' message from " + peerID + ".";
+        final String msg = getHeader() + " recieved the 'interested' message from " + peerID + ".\n";
         try 
         {
             logger.write(msg);
             logger.flush();
-            logger.close();
         } catch (IOException e) 
         {
             e.printStackTrace();
@@ -64,12 +75,11 @@ public class EventLog {
 
     public void recievingNotInterested(int peerID)
     {
-        final String msg = getHeader() + " recieved the 'not interested' message from " + peerID + ".";
+        final String msg = getHeader() + " recieved the 'not interested' message from " + peerID + ".\n";
         try 
         {
             logger.write(msg);
             logger.flush();
-            logger.close();
         } catch (IOException e) 
         {
             e.printStackTrace();
@@ -86,7 +96,6 @@ public class EventLog {
         {
             logger.write(msg);
             logger.flush();
-            logger.close();
         } catch (IOException e) 
         {
             e.printStackTrace();
@@ -103,7 +112,6 @@ public class EventLog {
         {
             logger.write(msg);
             logger.flush();
-            logger.close();
             System.out.println(msg);
         } catch (IOException e) 
         {
@@ -117,7 +125,6 @@ public class EventLog {
         {
             logger.write(msg);
             logger.flush();
-            logger.close();
         } catch (IOException e) 
         {
             e.printStackTrace();
@@ -130,7 +137,6 @@ public class EventLog {
         {
             logger.write(msg);
             logger.flush();
-            logger.close();
         } catch (IOException e) 
         {
             e.printStackTrace();
@@ -143,7 +149,6 @@ public class EventLog {
         {
             logger.write(msg);
             logger.flush();
-            logger.close();
         } catch (IOException e) 
         {
             e.printStackTrace();
@@ -156,7 +161,6 @@ public class EventLog {
         {
             logger.write(msg);
             logger.flush();
-            logger.close();
         } catch (IOException e) 
         {
             e.printStackTrace();
@@ -170,13 +174,22 @@ public class EventLog {
         {
             logger.write(msg);
             logger.flush();
-            logger.close();
         } catch (IOException e) 
         {
             e.printStackTrace();
         }
     }
     
+    public void closeLogger(){
+        try
+        {
+            logger.close();
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
     public String getHeader(){
         return _header;
     }
