@@ -172,7 +172,7 @@ public class newNeighbors extends TimerTask {
             reset.put(p, false);
         }
         pp.setInterestedInMe(reset);
-        pp.setIsChocked(isChoked);
+        pp.setIsChoke(isChoked);
     }
     
 }
