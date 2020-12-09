@@ -5,11 +5,13 @@ import java.nio.ByteOrder;
 public class Piece extends Message {
 
     private int peerID;
+    private int pieceID;
 
-    public Piece(byte[] piecePayload, int pid) 
+    public Piece(byte[] piecePayload, int pid, int piecID) 
     {
         super((byte) 7, piecePayload);
         peerID=pid;
+        pieceID=piecID;
     }
 
     public Piece(int pieceID, byte[] pieceIDIdx, int pid) 
@@ -40,4 +42,7 @@ public class Piece extends Message {
         return peerID;
     }
 
+    public int getPieceID(){
+        return pieceID;
+    }
 }

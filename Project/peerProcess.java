@@ -228,6 +228,8 @@ public class peerProcess {
             if (peerID != ID)
                 peersInterestedInMe.put(ID, false);
             pieceData.put(ID, 0);
+            byte[] zero = new byte[bitFieldSize];
+            peersBitfields.put(ID, zero);
 
             if (peerID != ID) {
                 neighbors.put(ID, blank);
@@ -363,6 +365,7 @@ public class peerProcess {
                     if (done && !handshakeDone) {
                         System.out.println(peerID + " is done.");
                         if (haveFile && !bitFieldSent) {
+                            
                             for (Socket sock : sockets.values()) {
                                 Bitfield b = new Bitfield(bitField, peerID);
                                 Writer bitfieldOut = new Writer(b, sock, peerID);
@@ -375,9 +378,12 @@ public class peerProcess {
                         Timer timer = new Timer();
                         timer.schedule(new newNeighbors(numPreferredNeighbors, unchokingInterval, peers, bitField, peerID, areLeftovers, numLeftover, pp), 0, unchokingInterval * 1000);
                         Timer timer2 = new Timer();
-                        timer2.schedule(new Optimistically(isChoke, pp), 0, optimisticUnchokingInterval*1000);
+                        timer2.schedule(new Optimistically(isChoke, pp, peerID), 0, optimisticUnchokingInterval*1000);
                     }
 
+                    // if (peersBitfields.size()==1){
+                        
+                    // }
                     //System.out.println(peerID + " is listening for messages");
                     Socket s = server.accept();
                     //System.out.println(peerID + "'s listener received a message");
@@ -386,7 +392,7 @@ public class peerProcess {
                     Object inMessage = in.readObject();
                     String inAddress = s.getInetAddress().getHostName();
                     int inPeerID = 0;
-                    byte[] inBitfield = peersBitfields.get(inPeerID);
+                    byte[] inBitfield = null;
 
                     if (peersBitfields.containsKey(inPeerID)) {
                         for (int i = 0; i < inBitfield.length; i++) {
@@ -432,16 +438,19 @@ public class peerProcess {
                     //Choke
                     else if (inMessage instanceof Choke) {
                         Choke c = (Choke)inMessage;
-                        isChockedBy.put(inPeerID, true);
+                        isChockedBy.put(c.getPID(), true);
                     } 
                     //Unchoke
                     else if (inMessage instanceof Unchoke) {
                         Unchoke uc = (Unchoke)inMessage;
-                        isChockedBy.put(inPeerID, false);
+                        inBitfield = peersBitfields.get(uc.getPID());
+                        isChockedBy.put(uc.getPID(), false);
 
                         for (int i = 0; i < bitField.length; i++) {
                             byte mask = 1;
-
+                            // if (!peersBitfields.containsKey(inPeerID)){
+                            //     continue;
+                            // }
                             for (int j = 0; j < 8; j++) {
                                 byte myBit = (byte)((bitField[i] >> (7 - j)) & mask);
                                 byte inBit = (byte)((inBitfield[i] >> (7 - j)) & mask);
@@ -454,7 +463,7 @@ public class peerProcess {
                                     if (!requests.contains(pieceIdx)) {
                                         requests.add(pieceIdx);
 
-                                        Writer w = new Writer(new Request(pieceIdx), sockets.get(inPeerID), peerID);
+                                        Writer w = new Writer(new Request(pieceIdx, peerID), sockets.get(uc.getPID()), peerID);
                                         Thread t = new Thread(w);
                                         t.start();
                                     }
@@ -479,6 +488,7 @@ public class peerProcess {
                     //Have
                     else if (inMessage instanceof Have) {
                         Have h = (Have)inMessage;
+                        peerlog.receivingHave(h.getPID(), h.getPieceIdx());
                         boolean write = false;
                         for (int i = 0; i < bitField.length;i++){
                             if (bitField[i] == h.getBitfield()[i])
@@ -555,15 +565,22 @@ public class peerProcess {
                         Request r = (Request)inMessage;
                         int p = r.getPieceIdx();
 
-                        Writer w = new Writer(new Piece(pieces[p], peerID), sockets.get(inPeerID), peerID);
+                        Writer w = new Writer(new Piece(pieces[p], peerID, r.getPieceIdx()), sockets.get(r.getPID()), peerID);
                         Thread t = new Thread(w);
                         t.start();
                     } 
                     //Piece
                     else if (inMessage instanceof Piece) {
                         Piece p = (Piece)inMessage;
+                        inBitfield = peersBitfields.get(p.getPID());
                         int temp = pieceData.get(p.getPID());
                         pieceData.replace(p.getPID(), (temp+1));
+
+                        for (Socket sock : sockets.values()){
+                            Writer w = new Writer(new Have(p.getPieceID(), peerID), sock, peerID);
+                            Thread t = new Thread(w);
+                            t.start();
+                        }
 
                         for (int i = 0; i < bitField.length; i++) {
                             byte mask = 1;
@@ -580,11 +597,11 @@ public class peerProcess {
                                     if (!requests.contains(pieceIdx)) {
                                         requests.add(pieceIdx);
 
-                                        if (isChockedBy.get(inPeerID) || !containsInterestingPieces.get(inPeerID)){
+                                        if (isChockedBy.get(p.getPID()) || !containsInterestingPieces.get(p.getPID())){
                                             continue;
                                         }
 
-                                        Writer w = new Writer(new Request(pieceIdx), sockets.get(inPeerID), peerID);
+                                        Writer w = new Writer(new Request(pieceIdx, peerID), sockets.get(p.getPID()), peerID);
                                         Thread t = new Thread(w);
                                         t.start();
                                     }

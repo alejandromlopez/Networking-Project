@@ -7,10 +7,15 @@ public class Optimistically extends TimerTask{
     private static HashMap<Integer, Boolean> isChoked = new HashMap<Integer, Boolean>();
     private ArrayList<Integer> currentlyChoked = new ArrayList<Integer>();
     private peerProcess pp;
+    private int peerID;
+    private EventLog peerlog;
     
-    public Optimistically(HashMap<Integer, Boolean> choke, peerProcess p){
+    
+    public Optimistically(HashMap<Integer, Boolean> choke, peerProcess p, int pid){
         isChoked = choke;
         pp = p;
+        peerID = pid;
+        peerlog = new EventLog(peerID);
     }
 
     public void run(){
@@ -25,6 +30,7 @@ public class Optimistically extends TimerTask{
             Thread t = new Thread(w);
             t.start();
             pp.setCurrentOptUnchoked(currentlyChoked.get(ran));
+            peerlog.changeOfOptUnchkNeighbor(currentlyChoked.get(ran));
         }
     }
 }

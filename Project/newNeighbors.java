@@ -1,4 +1,5 @@
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.TimerTask;
 
@@ -16,6 +17,8 @@ public class newNeighbors extends TimerTask {
     private peerProcess pp;
     private int[] highPeers;
     private double[] highRates;
+    private ArrayList<Integer> newPrefNeighbor = new ArrayList<Integer>();
+    private EventLog peerlog;
 
     public newNeighbors(int pn, int interval, HashMap<Integer, RemotePeerInfo> prs, byte[] b, int pid, boolean leftover,
             int numLeft, peerProcess p) {
@@ -29,6 +32,7 @@ public class newNeighbors extends TimerTask {
         pp = p;
         highPeers = new int[pn];
         highRates = new double[pn];
+        peerlog = new EventLog(peerID);
     }
 
     
@@ -103,12 +107,15 @@ public class newNeighbors extends TimerTask {
             }
 
 
+            
             for (int p : rates.keySet()){
+                newPrefNeighbor.add(p);
                 Unchoke unchoke = new Unchoke(peerID);
                 Writer w = new Writer(unchoke, pp.getSockets().get(p), peerID);
                 Thread t = new Thread(w);
                 t.start();
             }
+            peerlog.changeOfPrefNeighbor(newPrefNeighbor);
 
             for (int p : peers.keySet()){
                 if ((rates.containsKey(p) || pp.getCurrentOptUnchoked() == p) || p == peerID){
