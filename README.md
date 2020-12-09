@@ -49,7 +49,7 @@ Then you can run java StartRemotePeers.
 - [X] Change of optimistically unchoked neighbor
 - [X] Unchoking
 - [X] Choking
-- [ ] Receiving 'have' message
+- [X] Receiving 'have' message
 - [X] Receiving 'interested' message
 - [X] Receiving 'not interested' message
 - [ ] Downloading a piece
