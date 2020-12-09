@@ -19,6 +19,7 @@ public class peerProcess {
     private int fileSize;
     private int pieceSize;
     private static byte[] bitField;
+    private byte[] fullBitField;
     private boolean haveFile;
     private int numOfPieces;
     private int bitFieldSize;
@@ -135,6 +136,7 @@ public class peerProcess {
 
         computeNumberOfPiece();
         bitField = new byte[bitFieldSize];
+        fullBitField = new byte[bitFieldSize];
 
         String property = prop2.getProperty("" + peerID);
         String bit = property.split(" ")[2];
@@ -151,10 +153,12 @@ public class peerProcess {
             for (int i = 0; i < bitField.length; i++) {
                 if (areLeftovers && i == (bitField.length - 1)) {
                     bitField[i] = (byte) byteNum;
+                    fullBitField[i] = (byte) byteNum;
                     continue;
                 }
 
                 bitField[i] = (byte) 255;
+                fullBitField[i] = (byte) 255;
             }
             moveFile();
             haveFile = true;
@@ -478,6 +482,20 @@ public class peerProcess {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
+                
+
+                //Checks to see if all the peers have all of the pieces
+                boolean allDone = false;
+                for (byte[] b : peersBitfields.values()){
+                    if (b!=fullBitField){
+                        allDone=false;
+                        break;
+                    }
+                    allDone=true;
+                }
+                if (allDone)
+                    finish = true;
+
             }
             peerlog.closeLogger();  
         }
