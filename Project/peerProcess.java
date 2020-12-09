@@ -13,7 +13,8 @@ public class peerProcess {
     private static int peerID;
     private static int numPreferredNeighbors;
     private static int unchokingInterval;
-    private int optimisticUnchokingInterval;
+    private static int optimisticUnchokingInterval;
+    private static int currentOptUnchoked;
     private String fileName;
     private int fileSize;
     private int pieceSize;
@@ -31,11 +32,14 @@ public class peerProcess {
     private static HashMap<Integer, Integer> pieceData = new HashMap<Integer, Integer>();
     private HashMap<Integer, String> neighbors = new HashMap<Integer, String>();
     private HashMap<Integer, byte[]> peersBitfields = new HashMap<Integer, byte[]>();
+    private static HashMap<Integer, Boolean> peersInterestedInMe = new HashMap<Integer, Boolean>();
+    private static HashMap<Integer, Boolean> isChoke = new HashMap<Integer, Boolean>();
 
     public peerProcess(int pID) {
         peerID = pID;
         initialize();
         tester = false;
+        
     }
 
     // Moves the file from the current working directory to the specified
@@ -164,6 +168,7 @@ public class peerProcess {
 
             RemotePeerInfo rpi = new RemotePeerInfo(ID, address, port);
             peers.put(ID, rpi);
+            peersInterestedInMe.put(ID, false);
 
             if (peerID != ID) {
                 neighbors.put(ID, blank);
@@ -262,7 +267,7 @@ public class peerProcess {
         Timer timer = new Timer();
         timer.schedule(new newNeighbors(numPreferredNeighbors, unchokingInterval, peers, bitField, peerID, areLeftovers, numLeftover, pp), 0, unchokingInterval * 1000);
         Timer timer2 = new Timer();
-        //timer.schedule()
+        timer2.schedule(new Optimistically(isChoke, pp), 0, optimisticUnchokingInterval*1000);
     }
 
     public class Listener implements Runnable {
@@ -352,7 +357,7 @@ public class peerProcess {
                     else if (inMessage instanceof Interested) {
                         Interested interested = (Interested)inMessage;
                         System.out.println(peerID + " has received an interested message from " + interested.getPID());
-                        
+                        peersInterestedInMe.replace(interested.getPID(), true);
                     } 
                     //Uninterested
                     else if (inMessage instanceof Uninterested) {
@@ -453,8 +458,32 @@ public class peerProcess {
         return pieceData;
     }
 
+    public HashMap<Integer, Boolean> getPeersInterestedInMe(){
+        return peersInterestedInMe;
+    }
+
+    public HashMap<Integer, Socket> getSockets(){
+        return sockets;
+    }
+
+    public int getCurrentOptUnchoked(){
+        return currentOptUnchoked;
+    }
+
     public void setPieceData(HashMap<Integer, Integer> p){
         pieceData = p;
+    }
+
+    public void setInterestedInMe(HashMap<Integer, Boolean> i){
+        peersInterestedInMe = i;
+    }
+
+    public void setCurrentOptUnchoked(int pid){
+        currentOptUnchoked = pid;
+    }
+
+    public void setIsChoke(HashMap<Integer, Boolean> choking){
+        isChoke = choking;
     }
 
 }
