@@ -1,50 +1,31 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 
 public class Reader implements Runnable {
-    private int peerID;
     private ObjectInputStream in;
-    private Message message;
-    private HandshakeMessage handshakeMessage;
     private Socket socket;
 
-    public Reader(Socket s, int pid) {
+    public Reader(Socket s) {
         socket = s;
-        peerID = pid;
-    }
-
-    public Message getMessage() {
-        return message;
-    }
-
-    public HandshakeMessage getHandshakeMessage() {
-        return handshakeMessage;
     }
 
     public void run() {
         try {
-            System.out.println(peerID + " reading");
             in = new ObjectInputStream(socket.getInputStream());
-            System.out.println(peerID + " RECEIVED MESSAGE!");
-            Object obj = in.readObject();
-            System.out.println(peerID + " READ MESSAGE!");
 
-            if (obj instanceof HandshakeMessage) {
-                handshakeMessage = (HandshakeMessage)obj;
-                System.out.println(peerID + " received handshake from " + handshakeMessage.getPeerID());
-            } else if (obj instanceof Message) {
-                message = (Message)obj;
-                System.out.println(peerID + " received message from " + handshakeMessage.getPeerID());
-            }
+            byte[] lenBuf = new byte[4];
+            in.read(lenBuf, 0, 4);
+            int length = ByteBuffer.wrap(lenBuf).getInt();
 
+            byte[] messageType = new byte[1];
+            in.read(messageType, 0, 1);
+
+            byte[] payload = new byte[length];
+            in.read(payload, 0, length);
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println(peerID + " " + e);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            System.out.println(peerID + " reader output error: " + e);
         }
-
     }
 }
