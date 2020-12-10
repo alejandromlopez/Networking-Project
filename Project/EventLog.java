@@ -123,9 +123,9 @@ public class EventLog {
         String neighborlist = "";
         for (int i = 0; i < neighbors.size(); i++){
             if (i != neighbors.size()-1)
-                neighborlist = " " + neighbors.get(i) + ",";
+                neighborlist += " " + neighbors.get(i) + ",";
             else
-                neighborlist = " " + neighbors.get(i);
+                neighborlist += " " + neighbors.get(i);
         }
         final String msg = getHeader() + " has the preferred neighbors" + neighborlist + ".\n";
         try 
