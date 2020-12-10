@@ -1,7 +1,14 @@
 
 public class Unchoke extends Message {
-    public Unchoke()
+    private int peerID;
+
+    public Unchoke(int pid)
     {
-        super((byte) 1, null);
+        super((byte) 1);
+        peerID = pid;
+    }
+
+    public int getPID(){
+        return peerID;
     }
 }
