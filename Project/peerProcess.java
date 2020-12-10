@@ -43,6 +43,8 @@ public class peerProcess {
     private Set<Integer> requests = new HashSet<Integer>();
     private EventLog peerlog;
     private byte[][] pieces;
+    private Timer timer = new Timer();
+    private Timer timer2 = new Timer();
 
     public peerProcess(int pID) {
         peerID = pID;
@@ -243,11 +245,14 @@ public class peerProcess {
 
             RemotePeerInfo rpi = new RemotePeerInfo(ID, address, port);
             peers.put(ID, rpi);
-            if (peerID != ID)
-                peersInterestedInMe.put(ID, false);
-            pieceData.put(ID, 0);
             byte[] zero = new byte[bitFieldSize];
-            peersBitfields.put(ID, zero);
+
+            if (peerID != ID) {
+                peersInterestedInMe.put(ID, false);
+                peersBitfields.put(ID, zero);
+            }
+            pieceData.put(ID, 0);
+            
 
             if (peerID != ID) {
                 neighbors.put(ID, blank);
@@ -273,7 +278,6 @@ public class peerProcess {
 
     private void establishConnections() {
         Socket socket = null;
-        Socket socket2 = null;
         String workingDir = System.getProperty("user.dir");
 
         Scanner s = null;
@@ -306,7 +310,6 @@ public class peerProcess {
             if (ID != peerID) {
                 try {
                     socket = new Socket(address, port);
-                    // socket2 = new Socket(address, port);
                     System.out.println(peerID + ": Connection established with " + address + " " + ID);
                     peerlog.TCPConnectionTo(ID);
 
@@ -324,32 +327,16 @@ public class peerProcess {
                 break;
             }
         } while (s.hasNext());
-
-        // Listener l = new Listener(this);
-        // Thread t = new Thread(l);
-        // t.start();
     }
 
     // Starts up the peerProcess and begins message delivery
     public static void main(String[] args) {
-        // try {
-        // System.setOut(new PrintStream(new FileOutputStream("log.txt")));
-        // } catch (FileNotFoundException e) {
-        // e.printStackTrace();
-        // }
 
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
         pp.establishConnections();
         Listener l = pp.new Listener(pp);
         Thread t = new Thread(l);
         t.start();
-        // Timer timer = new Timer();
-        // timer.schedule(new newNeighbors(numPreferredNeighbors, unchokingInterval,
-        // peers, bitField, peerID, areLeftovers, numLeftover, pp), 0, unchokingInterval
-        // * 1000);
-        // Timer timer2 = new Timer();
-        // timer2.schedule(new Optimistically(isChoke, pp), 0,
-        // optimisticUnchokingInterval*1000);
     }
 
     public class Listener implements Runnable {
@@ -395,23 +382,15 @@ public class peerProcess {
                                 bitFieldSent = true;
                             }
                         }
+
                         handshakeDone = true;
-                        // Timer timer = new Timer();
-                        // timer.schedule(new newNeighbors(numPreferredNeighbors, unchokingInterval, peers, bitField, peerID, 
-                        // areLeftovers, numLeftover, pp, peerlog), 0, unchokingInterval * 1000);
-                        scheduler.scheduleAtFixedRate(new newNeighbors(numPreferredNeighbors, unchokingInterval, peers, bitField, peerID, 
-                        areLeftovers, numLeftover, pp, peerlog), 0, unchokingInterval, TimeUnit.SECONDS);
-                        Timer timer2 = new Timer();
+                        timer.schedule(new newNeighbors(numPreferredNeighbors, unchokingInterval, peers, bitField, peerID, 
+                                                        areLeftovers, numLeftover, pp, peerlog), 0, unchokingInterval * 1000);
                         timer2.schedule(new Optimistically(isChoke, pp, peerID, peerlog), 0,
-                                optimisticUnchokingInterval * 1000);
+                                                           optimisticUnchokingInterval * 1000);
                     }
 
-                    // if (peersBitfields.size()==1){
-
-                    // }
-                    // System.out.println(peerID + " is listening for messages");
                     Socket s = server.accept();
-                    // System.out.println(peerID + "'s listener received a message");
 
                     in = new ObjectInputStream(s.getInputStream());
                     Object inMessage = in.readObject();
@@ -473,23 +452,8 @@ public class peerProcess {
                         isChockedBy.put(uc.getPID(), false);
                         peerlog.unchoking(uc.getPID());
 
-                        // System.out.println("");
-                        // System.out.print("Bitfield is ");
-                        // for ( int i = 0; i < bitField.length; i++)
-                        //     System.out.print(bitField[i] + " ");
-                        // System.out.println("");
-
-                        // System.out.println("");
-                        // System.out.print("inBitfield is ");
-                        // for ( int i = 0; i < inBitfield.length; i++)
-                        //     System.out.print(inBitfield[i] + " ");
-                        // System.out.println("");
-
                         for (int i = 0; i < bitField.length; i++) {
                             byte mask = 1;
-                            // if (!peersBitfields.containsKey(inPeerID)){
-                            // continue;
-                            // }
                             for (int j = 0; j < 8; j++) {
                                 byte myBit = (byte) ((bitField[i] >> (7 - j)) & mask);
                                 byte inBit = (byte) ((inBitfield[i] >> (7 - j)) & mask);
@@ -523,8 +487,7 @@ public class peerProcess {
                     // Uninterested
                     else if (inMessage instanceof Uninterested) {
                         Uninterested uninterested = (Uninterested) inMessage;
-                        System.out.println(
-                                peerID + " has received an uninterested message from " + uninterested.getPID());
+                        System.out.println(peerID + " has received an uninterested message from " + uninterested.getPID());
                         peerlog.receivingNotInterested(uninterested.getPID());
                     }
                     // Have
@@ -640,17 +603,9 @@ public class peerProcess {
                     }
                     // Piece
                     else if (inMessage instanceof Piece) {
-                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                        /*
-                         * 
-                         * 
-                         * PIECE IS NEVER SAVED SO A PEER NEVER ACTUALLY HAS THE FILE
-                         * 
-                         * 
-                         */
-                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                         Piece p = (Piece) inMessage;
                         inBitfield = peersBitfields.get(p.getPID());
+                        pieces[p.getPieceID()] = p.getPiece();
 
                         // Used later in newNeighbors to calc rates
                         int temp = pieceData.get(p.getPID());
@@ -662,27 +617,14 @@ public class peerProcess {
                             for (int j = 0; j < 8; j++) {
                                 byte myBit = (byte) ((bitField[i] >> (7 - j)) & mask);
                                 byte fBit = (byte) ((fullBitField[i] >> (7 - j)) & mask);
-                                if (myBit == fBit)
+                                if (myBit == 1 && fBit == 1)
                                     totalPieces++;
                             }
                         }
 
                         peerlog.downloadingAPiece(p.getPID(), p.getPieceID(), totalPieces);
 
-                        // for (Socket sock : sockets.values()){
-                        // Writer w = new Writer(new Have(bitField, p.getPieceID(), peerID), sock,
-                        // peerID);
-                        // Thread t = new Thread(w);
-                        // t.start();
-                        // }
-
                         bitField = update(bitField, p.getPieceID());
-                        // System.out.print("Bitfield after piece " + p.getPieceID() + " was received is
-                        // ");
-                        // for (int k = 0; k < bitField.length; k++){
-                        // System.out.print(bitField[k] + " ");
-                        // }
-                        // System.out.println("");
 
                         boolean toBreak = false;
                         for (int i = 0; i < bitField.length; i++) {
@@ -696,13 +638,6 @@ public class peerProcess {
                                     continue;
                                 } else if (myBit == 0 && inBit == 1) {
                                     int pieceIdx = (8 * i) + j;
-                                    // bitField = update(bitField, p.getPieceID());
-                                    // System.out.print("Bitfield after piece " + p.getPieceID() + " was received is
-                                    // ");
-                                    // for (int k = 0; k < bitField.length; k++){
-                                    // System.out.print(bitField[k] + " ");
-                                    // }
-                                    // System.out.println("");
 
                                     if (!requests.contains(pieceIdx)) {
                                         requests.add(pieceIdx);
@@ -715,13 +650,9 @@ public class peerProcess {
                                                 sockets.get(p.getPID()), peerID);
                                         Thread t = new Thread(w);
                                         t.start();
-                                        // toBreak = true;
-                                        // break;
                                     }
                                 }
                             }
-                            // if (toBreak)
-                            // break;
                         }
 
                         for (Socket sock : sockets.values()) {
@@ -739,56 +670,59 @@ public class peerProcess {
                     e.printStackTrace();
                 }
 
-                // boolean fbf = true;
-                // for (int i = 0; i < bitField.length; i++){
-                // if (bitField[i] == 0)
-                // fbf = false;
-                // }
-
                 // Checks if this peer is done
                 boolean areEqual = true;
                 for (int i = 0; i < bitField.length; i++) {
-                    for (int k = 0; k < bitField.length; k++) {
-                        // System.out.print(bitField[k] + " ");
-                        // }
-                        if (bitField[i] == fullBitField[i])
-                            continue;
-                        areEqual = false;
+                    if (bitField[i] == fullBitField[i]) {
+                        System.out.println("equal byte in bitfield");
+                        continue;
                     }
+                    System.out.println("not equal");
+                    areEqual = false;
                 }
                 if (areEqual && count == 0) {
                     peerlog.CompletionOfDownload();
                     count++;
+                    System.out.println("completed");
                 }
 
                 // Checks to see if all the peers have all of the pieces
                 boolean allDone = true;
                 for (byte[] b : peersBitfields.values()) {
-                    
+                    System.out.println("this code is shit?");
+                    for (byte by : b) {
+                        System.out.print(by + " " );
+                    }
                     for (int i = 0; i < bitField.length; i++) {
-                        byte mask = 1;
+                        //byte mask = 1;
 
-                        for (int j = 0; j < 8; j++) {
-                            byte myBit = (byte) ((b[i] >> (7 - j)) & mask);
-                            byte inBit = (byte) ((fullBitField[i] >> (7 - j)) & mask);
-
-                            if (myBit == inBit) {
-                                continue;
-                            } else{
-                                allDone = false;
-                                break;
-                            }
-                        }
-                        if (!allDone)
+                        if (b[i] == fullBitField[i]) {
+                            continue;
+                        } else {
+                            allDone = false;
                             break;
+                        }
+                    }
+                    if (!allDone) {
+                        System.out.println("not done");
+                        break;
                     }
                 }
 
-                if (allDone){
-                    finish = true;
+                if (allDone && areEqual){
+                    System.out.println("should quit");
+                    timer.cancel();
+                    timer2.cancel();
+                    break;
+                }
+                for (byte b : bitField) {
+                    System.out.println("bitField: " + b);
                 }
 
             }
+
+            //TODO: write out all of your pieces into a file
+
             peerlog.closeLogger();
         }
 

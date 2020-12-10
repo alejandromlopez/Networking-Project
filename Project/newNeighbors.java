@@ -3,7 +3,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.TimerTask;
 
-public class newNeighbors implements Runnable {
+public class newNeighbors extends TimerTask {
     private int prefNeighbors;
     private int unchockingInterval;
     private HashMap<Integer, RemotePeerInfo> peers = new HashMap<Integer, RemotePeerInfo>();
@@ -191,11 +191,15 @@ public class newNeighbors implements Runnable {
 
             int[] notSent = new int[pp.getPeersInterestedInMe().size() - sentAlready.size()];
             int count=0;
+            System.out.println("notSent size is: " + notSent.length);
+            System.out.println("interestedInMe size is: " + pp.getPeersInterestedInMe().size());
+
             for (int p : pp.getPeersInterestedInMe().keySet()){
+                System.out.println("count is: " + count);
                 if (!sentAlready.containsKey(p) && pp.getCurrentOptUnchoked() != p){
                     notSent[count]=p;
+                    count++;
                 }
-                count++;
             }
 
             for (int i = 0; i < notSent.length; i++){
