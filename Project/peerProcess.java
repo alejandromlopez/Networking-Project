@@ -580,8 +580,8 @@ public class peerProcess {
 
         // create sockets with all peers that came before us
         pp.establishConnections();
-        timer.schedule(new newNeighbors(), 1000, getUnchokingInterval() * 1000);
-        timer2.schedule(new Optimistically(), 1000, getOpUnInterval()*1000);
+        timer.schedule(new newNeighbors(), 0, getUnchokingInterval() * 1000);
+        timer2.schedule(new Optimistically(), 0, getOpUnInterval()*1000);
 
         //System.out.println("About to end peerProcess");
         for (Thread thread: threads.values()) {
@@ -983,6 +983,8 @@ public class peerProcess {
                                             // }
                                             int count = 0;
                                             while(true){
+                                                if (getPiecesINeed().size() == 0)
+                                                    break;
                                                 int ran = (int) (Math.random() * getPiecesINeed().size());
                                                 int pieceNeeded = getPiecesINeed().get(ran);
                                                 if (count > 5000){
