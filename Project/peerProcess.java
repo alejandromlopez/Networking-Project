@@ -4,9 +4,6 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -45,15 +42,14 @@ public class peerProcess {
     private static HashMap<Integer, byte[]> peersBitfields = new HashMap<Integer, byte[]>();
     private static HashMap<Integer, Boolean> peersInterestedInMe = new HashMap<Integer, Boolean>();
     private static HashMap<Integer, Boolean> isChoke = new HashMap<Integer, Boolean>();
-    //private Set<Integer> requests = new HashSet<Integer>();
     private HashMap<Integer, Integer> requests = new HashMap<Integer, Integer>();
     private Set<Integer> piecesIHave = new HashSet<Integer>();
     private byte[][] pieces;
     private int piecesDownloaded;
     private static Timer timer = new Timer();
     private static Timer timer2 = new Timer();
-
-    private boolean haveFile;
+    private File byteFile;
+    private boolean haveFile = false;
 
     public peerProcess(int pID) {
         peerID = pID;
@@ -131,6 +127,35 @@ public class peerProcess {
         }
     }
 
+    // Take the file of pieces and translate it to original text
+    public void decodeBytes(){
+        // If the file is empty, write to it
+        if (byteFile.length() == 0) {
+            String workingDir = System.getProperty("user.dir");
+            FileWriter writer = null;
+            try {
+                writer = new FileWriter(workingDir + "/peer_" + peerID + "/" + fileName);
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+            
+            for (int i = 0; i < pieces.length; i++) {
+                String text = new String(pieces[i], StandardCharsets.UTF_8);
+                // Checks to see if there are null values
+                if (text.indexOf("") > 0){
+                    text = text.substring(0, text.indexOf(""));
+                }
+                try {
+                    writer.append(text);
+                    writer.flush();
+                    //writer.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     // Read PeerInfo.cfg and Common.cfg and set all necessary variables and read all necessary data
     private void initialize() {
         String workingDir = System.getProperty("user.dir");
@@ -199,20 +224,6 @@ public class peerProcess {
 
         // set the bitfield to all ones if the peer owns the file; 0 otherwise
         // set up "fullBitfield" to have all ones. this will be used later on to check if all peers have downloaded the file
-        // byte lastByte = 0b00000000;
-        // byte mask = (byte)0b10000000;
-        // for (int i = 0; i < numLeftover; i++) {
-
-        // }
-
-        // for (int i = 0; i < bitfield.length; i++) {
-        //     if (bitfieldBit.equals("1")) {
-        //         fullBitfield[i] = (byte)255;
-        //         bitfield[i] = (byte)255;
-        //     } else {
-        //         bitfield[i] = (byte)0;
-        //     }
-        // }
         if (bitfieldBit.equals("1")) {
             int leftover = numOfPieces % 8;
             int byteNum = 0;
@@ -253,6 +264,7 @@ public class peerProcess {
 
                 fullBitfield[i] = (byte) 255;
             }
+            byteFile = new File(workingDir + "/peer_" + peerID + fileName);
         }
 
         Scanner s = null;
@@ -397,7 +409,7 @@ public class peerProcess {
             // inPeerID = rpi.getPeerID();
             // }
             // }
-
+            peerlog.TCPConnectionFrom(inPeerID);
             /*
              * Checks if this peerProcess has already created a socket to this incoming
              * message If it hasn't, then creates a socket with this connection, places it
@@ -683,8 +695,8 @@ public class peerProcess {
             isChokedBy.put(pid, status);
         }
 
-        public synchronized HashMap<Integer, Boolean> getContainsInterestingPieces(){
-            return containsInterestingPieces;
+        public synchronized boolean getContainsInterestingPieces(int remotePeerID){
+            return containsInterestingPieces.get(remotePeerID);
         }
 
         public synchronized void setContainsInterestingPieces(int pid, boolean does){
@@ -772,7 +784,7 @@ public class peerProcess {
                                                     int pieceIdx = (8 * i) + j;
                                                     if (!getRequests().containsValue(pieceIdx)) {
                                                         //TODO: Make Selection Random
-                                                        if (getIsChokedBy().get(remotePeerID) || !getContainsInterestingPieces().get(remotePeerID)) {
+                                                        if (getIsChokedBy().get(remotePeerID) || !getContainsInterestingPieces(remotePeerID)) {
                                                             continue;
                                                         }
                                                         setRequests(remotePeerID, pieceIdx);
@@ -824,6 +836,7 @@ public class peerProcess {
                                         newRemoteBitfield[haveIndexByte] = newByte;
                                         setPeersBitfields(remotePeerID, newRemoteBitfield);
 
+                                        peerlog.receivingHave(remotePeerID, haveIndex);
                                         break;
                                     // Received bitfield message
                                     case 5:
@@ -887,8 +900,7 @@ public class peerProcess {
                                          * and decides whether it should send ‘not interested’ messages to some neighbors.
                                          */
 
-                                        // TODO: add condition for && remote peer has interesting pieces
-                                        if (!getIsChokedBy().get(remotePeerID)) {
+                                        if (!getIsChokedBy().get(remotePeerID) && getContainsInterestingPieces(remotePeerID)) {
                                             byte[] remotePieceIdxBytes = new byte[4];
                                             byte[] remotePieceBytes = new byte[pieceSize];
                                             for (int i = 0; i < length - 1; i++) {
@@ -911,6 +923,16 @@ public class peerProcess {
                                                 setPiecesDownloaded();
                                                 peerlog.downloadingAPiece(remotePeerID, remotePIdx, getPiecesDownloaded());
                                                 System.out.println("Our total number of pieces is " + getPiecesDownloaded());
+
+                                                // sends out a Have message to all remote peers
+                                                for (int key: peers.keySet()) {
+                                                    if (key == peerID) {
+                                                        continue;
+                                                    } else {
+                                                        System.out.println("Piece: sending out have message to everyone for piece: " + remotePIdx);
+                                                        setMessagesToSend(key, new Have(remotePIdx));
+                                                    }
+                                                }
                                             }
 
                                             // checks to see if the remote peer has any pieces that are interesting
@@ -1036,7 +1058,21 @@ public class peerProcess {
                     sendMessage();
 
                     // TODO: add a proper condition here to check that all peers have received all pieces
+                    // checks to see if all peers have downloaded the complete file
                     // setProtocolCompleted(true);
+                    // for (byte[] bf: peersBitfields.values()) {
+                    //     //System.out.println("Entered the loop for checking completed bitfields");
+                    //     for (int i = 0; i < bf.length; i++) {
+                    //         if (bf[i] != fullBitfield[i]) {
+                    //             setProtocolCompleted(false);
+                    //             //System.out.println("There is a peer who has not completed downloading the file");
+                    //         }
+                    //     }
+                    // }
+                    // if (getProtocolCompleted()) {
+                    //     System.out.println("All peers have completed downloading the file");
+                    //     break;
+                    // }
                 }
             }
 

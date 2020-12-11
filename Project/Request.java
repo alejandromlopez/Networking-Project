@@ -1,4 +1,3 @@
-
 import java.nio.ByteBuffer;
 
 public class Request extends Message {
