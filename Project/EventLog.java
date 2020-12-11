@@ -90,7 +90,7 @@ public class EventLog {
     {
         final String msg = getHeader() + " has downloaded the piece " + pieceIdx
                                        + " from " + peerID 
-                                       + ". Now the number of pieces it has is " + (totalPieces + 1)
+                                       + ". Now the number of pieces it has is " + (totalPieces)
                                        + ".\n";
         try 
         {
