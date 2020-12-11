@@ -45,7 +45,8 @@ public class peerProcess {
     private static HashMap<Integer, byte[]> peersBitfields = new HashMap<Integer, byte[]>();
     private static HashMap<Integer, Boolean> peersInterestedInMe = new HashMap<Integer, Boolean>();
     private static HashMap<Integer, Boolean> isChoke = new HashMap<Integer, Boolean>();
-    private Set<Integer> requests = new HashSet<Integer>();
+    //private Set<Integer> requests = new HashSet<Integer>();
+    private HashMap<Integer, Integer> requests = new HashMap<Integer, Integer>();
     private Set<Integer> piecesIHave = new HashSet<Integer>();
     private byte[][] pieces;
     private int piecesDownloaded;
@@ -59,6 +60,8 @@ public class peerProcess {
         peerlog = new EventLog(pID);
         initialize();
         pieces = new byte[numOfPieces][pieceSize];
+
+        // TODO: should we add a condition where we encode the file only if we already own the file?
         encodeFile();
     }
 
@@ -194,6 +197,22 @@ public class peerProcess {
 
         portNum = Integer.parseInt(property.split(" ")[1]);
 
+        // set the bitfield to all ones if the peer owns the file; 0 otherwise
+        // set up "fullBitfield" to have all ones. this will be used later on to check if all peers have downloaded the file
+        // byte lastByte = 0b00000000;
+        // byte mask = (byte)0b10000000;
+        // for (int i = 0; i < numLeftover; i++) {
+
+        // }
+
+        // for (int i = 0; i < bitfield.length; i++) {
+        //     if (bitfieldBit.equals("1")) {
+        //         fullBitfield[i] = (byte)255;
+        //         bitfield[i] = (byte)255;
+        //     } else {
+        //         bitfield[i] = (byte)0;
+        //     }
+        // }
         if (bitfieldBit.equals("1")) {
             int leftover = numOfPieces % 8;
             int byteNum = 0;
@@ -211,9 +230,11 @@ public class peerProcess {
                 bitfield[i] = (byte)255;
                 fullBitfield[i] = (byte)255;
             }
+
             moveFile();
             haveFile = true;
         } else {
+            // sets this peer's bitfield to all zeros
             for (int i = 0; i < bitfield.length; i++) {
                 bitfield[i] = (byte) 0;
             }
@@ -437,6 +458,19 @@ public class peerProcess {
         pieces[pIdx] = p;
     }
 
+    private synchronized byte[] getBitfield() {
+        return bitfield;
+    }
+
+    private synchronized void setBitfield(int pieceIdx) {
+        int pieceIdxByte = pieceIdx / 8;
+        int pieceIdxBit = pieceIdx % 8;
+
+        byte newBit = (byte)(1 << (7 - pieceIdxBit));
+        byte newByte = (byte)(bitfield[pieceIdxByte] | newBit);
+        bitfield[pieceIdxByte] = newByte;
+    }
+
     private synchronized int getPiecesDownloaded(){
         return piecesDownloaded;
     }
@@ -488,15 +522,15 @@ public class peerProcess {
         isChoke = choking;
     }
 
-    public synchronized void setRequests(int pieceID){
-        requests.add(pieceID);
+    public synchronized void setRequests(int remotePeerID, int pieceIdx){
+        requests.put(remotePeerID, pieceIdx);
     }
 
     public synchronized void setRequestsRemoval(int piD){
         requests.remove(piD);
     }
 
-    public synchronized Set<Integer> getRequests(){
+    public synchronized HashMap<Integer, Integer> getRequests(){
         return requests;
     }
 
@@ -694,12 +728,15 @@ public class peerProcess {
                                 switch (messageType) {
                                     // Received choke message
                                     case 0:
+                                        System.out.println("Received Choke message from: " + remotePeerID);
                                         setIsChokedBy(remotePeerID, true);
                                         setRequestsRemoval(remotePeerID);
+                                        System.out.println("Requests size is: " + getRequests().size());
                                         peerlog.choking(remotePeerID);
                                         break;
                                     // Received unchoke message
                                     case 1:
+                                        System.out.println("Received Unchoke message from: " + remotePeerID);
                                         //inBitfield = peersBitfields.get(remotePeerID);
                                         setIsChokedBy(remotePeerID, false);
                                         peerlog.unchoking(remotePeerID);
@@ -715,14 +752,14 @@ public class peerProcess {
                                                     continue;
                                                 } else if (myBit == 0 && inBit == 1) {
                                                     int pieceIdx = (8 * i) + j;
-                                                    if (!getRequests().contains(pieceIdx)) {
+                                                    if (!getRequests().containsValue(pieceIdx)) {
                                                         //TODO: Make Selection Random
                                                         if (getIsChokedBy().get(remotePeerID) || !getContainsInterestingPieces().get(remotePeerID)) {
                                                             continue;
                                                         }
-                                                        setRequests(pieceIdx);
+                                                        setRequests(remotePeerID, pieceIdx);
                                                         setOutMessage(new Request(pieceIdx));
-                                                        System.out.println("Sent request from an unchoke method");
+                                                        System.out.println("Unchoke: sending request message");
                                                         sentRequest = true;
                                                         break;
                                                     }
@@ -734,23 +771,24 @@ public class peerProcess {
                                         break;
                                     // Received interested message
                                     case 2:
+                                        System.out.println("Received Interested message from: " + remotePeerID);
                                         setInterestedInMe(remotePeerID, true);
                                         peerlog.receivingInterested(remotePeerID);
                                         break;
                                     // Received not interested message
                                     case 3:
+                                        System.out.println("Received Not Interested message from: " + remotePeerID);
                                         setInterestedInMe(remotePeerID, false);
                                         peerlog.receivingNotInterested(remotePeerID);
                                         break;
                                     // Received have message
                                     case 4:
+                                        System.out.println("Received Have message from: " + remotePeerID);
                                         int haveIndex = ByteBuffer.wrap(payload).getInt();
                                         int haveIndexByte = haveIndex / 8;
                                         int haveIndexBit = haveIndex % 8;
 
                                         // checks if the remote peer has an interesting piece or not
-                                        // 11100000 >> 5 = 00000111
-                                        // 00000111 & 00000001
                                         if (((bitfield[haveIndexByte] >> (7 - haveIndexBit)) & 1) == 0) {
                                             setOutMessage(new Interested(peerID));
                                             setContainsInterestingPieces(remotePeerID, true);
@@ -771,6 +809,7 @@ public class peerProcess {
                                         break;
                                     // Received bitfield message
                                     case 5:
+                                        System.out.println("Received Bitfield message from: " + remotePeerID);
                                         // retrieves the bitfield of the remote peer
                                         for (int i = 0; i < bitfield.length; i++) {
                                             remoteBitfield[i] = inMessageBytes[i + 5];
@@ -814,6 +853,7 @@ public class peerProcess {
                                         break;
                                     // Received request message
                                     case 6:
+                                        System.out.println("Received Request message from: " + remotePeerID);
                                         // extracts the piece index that was requested from the remote peer
                                         int remotePieceIdx = ByteBuffer.wrap(payload).getInt();
 
@@ -822,6 +862,7 @@ public class peerProcess {
                                         break;
                                     // Received piece message
                                     case 7:
+                                        System.out.println("Received Piece message from: " + remotePeerID);
                                         // TODO: IMPLEMENT THE FOLLOWING
                                         /*
                                          * Whenever a peer receives a piece completely, it checks the bitfields of its neighbors 
@@ -840,9 +881,14 @@ public class peerProcess {
                                                 }
                                             }
 
+                                            // extract the piece index received
                                             int remotePIdx = ByteBuffer.wrap(remotePieceIdxBytes).getInt();
+                                            System.out.println("Piece: received piece index " + remotePIdx + " from " + remotePeerID);
                                             
                                             if(!getPiecesIHave().contains(remotePIdx)){
+                                                // update our bitfield with this newly obtained piece
+                                                setBitfield(remotePIdx);
+
                                                 setPieces(remotePIdx, remotePieceBytes);
                                                 setPiecesIHave(remotePIdx);
                                                 setPiecesDownloaded();
@@ -864,9 +910,9 @@ public class peerProcess {
                                                     if (myBit == inBit) {
                                                         continue;
                                                     } else if (myBit == 0 && inBit == 1) {
-                                                        if (!getRequests().contains((i * 8) + j)) {
+                                                        if (!getRequests().containsValue((i * 8) + j) && !getPiecesIHave().contains(remotePIdx)) {
                                                             setOutMessage(new Request((i * 8) + j));
-                                                            setRequests((i * 8) + j);
+                                                            setRequests(remotePeerID, (i * 8) + j);
                                                             System.out.println("Piece: sending request message to " + remotePeerID + " for piece " + ((i * 8) + j));
                                                             requested = true;
                                                             break;
@@ -912,7 +958,7 @@ public class peerProcess {
                     boolean correctID = false;
                     byte[] handshakePeerIDBytes = new byte[4];
                     in.read(handshakePeerIDBytes, 0, 4);
-                    int handshakePeerID = Integer.parseInt(new String(handshakePeerIDBytes, StandardCharsets.UTF_8));//ByteBuffer.wrap(handshakePeerIDBytes).getInt();
+                    int handshakePeerID = ByteBuffer.wrap(handshakePeerIDBytes).getInt();
                     System.out.println("The received handshake ID is: " + handshakePeerID);
 
                     if (remotePeerID == handshakePeerID) {
@@ -943,7 +989,7 @@ public class peerProcess {
                 // waits for the corresponding handshake to be received to move on to sending bitfield
                 while (!getReceivedHandshake()) {
                 }
-                System.out.println("Handshake has been sent and received: " + remotePeerID);
+                System.out.println("Handshake completed with: " + remotePeerID);
 
                 // proceed to send out bitfield message
                 setOutMessage(new Bitfield(bitfield));
@@ -951,8 +997,6 @@ public class peerProcess {
                 System.out.println("Bitfield message sent to " + remotePeerID);
 
                 while (!getProtocolCompleted()) {
-                    
-
                     // spins until there is a message to send out
                     while (getOutMessage() == null) {
                         if (getMessagesToSend().containsKey(remotePeerID)){
@@ -963,10 +1007,10 @@ public class peerProcess {
                     }
 
                     sendMessage();
-                }
 
-                // TODO: remmember this line when needing to terminate the program
-                //setProtocolCompleted(true);
+                    // TODO: add a proper condition here to check that all peers have received all pieces
+                    // setProtocolCompleted(true);
+                }
             }
 
             // converts the outgoing message to byte array
@@ -974,20 +1018,19 @@ public class peerProcess {
                 // checks if the mesage to be converted is the handshake message
                 if (sendHandshake) {
                     outMessageBytes = new byte[32];
-                    String outID = peerID + "";
+                    byte[] handshakeRemotePeerIDBytes = ByteBuffer.allocate(4).putInt(peerID).array();
 
                     // converts the handshake message to byte array to be sent out
                     for (int i = 0; i < outMessageBytes.length; i++) {
                         if (i < 18) {
+                            // puts the handshake header into the outgoing message byte array
                             outMessageBytes[i] = (byte)handshakeMessage.getHandshakeHeader().charAt(i);
                         } else if (i >= 18 && i < 28) {
+                            // puts the zero bits into the outgoing message byte array
                             outMessageBytes[i] = 0;
                         } else {
-                            outMessageBytes[i] = (byte)outID.charAt(i - 28);
-
-                            //outMessageBytes[i] = (byte) (ourPeerID & mask);
-                            //System.out.println("Writing our handshake peerID to send to" + remotePeerID);
-                            //ourPeerID <<= 8;
+                            // puts the peerID into the outgoing message byte array
+                            outMessageBytes[i] = handshakeRemotePeerIDBytes[i - 28];
                         }
                     }
 
@@ -1009,10 +1052,7 @@ public class peerProcess {
                     // converts the outgoing message to byte array to be sent out
                     for (int i = 0; i < 4 + len; i++) {
                         if (i < 4) {
-                            // outMessageBytes[i] = (byte) (len & mask);
-                            // len <<= 8;
                             outMessageBytes[i] = lengthBytes[i];
-
                             //System.out.println("Writing our message length to send to " + remotePeerID);
                         } else if (i == 4) {
                             //System.out.println("Message type: " + outMessage.getMType());
@@ -1061,7 +1101,7 @@ public class peerProcess {
         }
     
         public void run(){
-            //Calc rates
+            // calculate rates
             for (RemotePeerInfo p : peers.values()){
                 int numPieces = getPeerPieceData().get(p.getPeerID());
                 double rate = (double)numPieces / unchokingInterval;
@@ -1069,7 +1109,7 @@ public class peerProcess {
                     rates.put(p.getPeerID(), rate);
             }
     
-            //Used to assign complete.
+            // used to assign complete.
             for (int i = 0; i < getBitField().length; i++){
                 complete = true;
                 if (areLeftovers){
@@ -1104,7 +1144,7 @@ public class peerProcess {
             System.out.println("");
     
             if (!complete){
-                //Compute neighbors by download rate.
+                // compute neighbors by download rate.
                 System.out.println("Computing new neighbors when I don't have the complete file.");
                 for(int p : rates.keySet()){
                     boolean notinputed = true;
@@ -1169,7 +1209,6 @@ public class peerProcess {
     
             } else {
                 //Compute neighbors randomly.
-    
                 System.out.println("I MADE IT TO THE RANDOM PEER SELECTION");
                 HashMap<Integer, Integer> sentAlready = new HashMap<Integer, Integer>();
                 int[] peerIDInInterested = new int[getPeersInterestedInMe().size()];
@@ -1238,12 +1277,9 @@ public class peerProcess {
     }
 
     public static class Optimistically extends TimerTask{
-    
         private ArrayList<Integer> currentlyChoked = new ArrayList<Integer>();
         
-        
         public Optimistically(){
-
         }
     
         public void run(){
