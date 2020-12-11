@@ -522,6 +522,10 @@ public class peerProcess {
         isChoke = choking;
     }
 
+    public static synchronized HashMap<Integer, Boolean> getIsChoke(){
+        return isChoke;
+    }
+
     public synchronized void setRequests(int remotePeerID, int pieceIdx){
         requests.put(remotePeerID, pieceIdx);
     }
@@ -534,14 +538,28 @@ public class peerProcess {
         return requests;
     }
 
+    public static synchronized int getUnchokingInterval(){
+        return unchokingInterval;
+    }
+
+    public synchronized int getNumOfPieces(){
+        return numOfPieces;
+    }
+
+    public static synchronized int getOpUnInterval(){
+        return optimisticUnchokingInterval;
+    }
+
+
+
     // Starts up the peerProcess and begins message delivery
     public static void main(String[] args) {
         peerProcess pp = new peerProcess(Integer.parseInt(args[0]));
 
         // create sockets with all peers that came before us
         pp.establishConnections();
-        timer.schedule(new newNeighbors(), 1000, unchokingInterval * 1000);
-        timer2.schedule(new Optimistically(), 1000, optimisticUnchokingInterval*1000);
+        timer.schedule(new newNeighbors(), 1000, getUnchokingInterval() * 1000);
+        timer2.schedule(new Optimistically(), 1000, getOpUnInterval()*1000);
 
         //System.out.println("About to end peerProcess");
         for (Thread thread: threads.values()) {
@@ -888,7 +906,6 @@ public class peerProcess {
                                             if(!getPiecesIHave().contains(remotePIdx)){
                                                 // update our bitfield with this newly obtained piece
                                                 setBitfield(remotePIdx);
-
                                                 setPieces(remotePIdx, remotePieceBytes);
                                                 setPiecesIHave(remotePIdx);
                                                 setPiecesDownloaded();
@@ -898,30 +915,40 @@ public class peerProcess {
 
                                             // checks to see if the remote peer has any pieces that are interesting
                                             // if so, then send out a request message
-                                            boolean requested = false;
-                                            for (int i = 0; i < remoteBitfield.length; i++) {
-                                                // compares each bit in this peer's bitfield with each bit in the remote peer's bitfield
-                                                byte mask = 1;
+                                            // boolean requested = false;
+                                            // for (int i = 0; i < remoteBitfield.length; i++) {
+                                            //     // compares each bit in this peer's bitfield with each bit in the remote peer's bitfield
+                                            //     byte mask = 1;
                     
-                                                for (int j = 0; j < 8; j++) {
-                                                    byte myBit = (byte)((bitfield[i] >> (7 - j)) & mask);
-                                                    byte inBit = (byte)((remoteBitfield[i] >> (7 - j)) & mask);
+                                            //     for (int j = 0; j < 8; j++) {
+                                            //         byte myBit = (byte)((bitfield[i] >> (7 - j)) & mask);
+                                            //         byte inBit = (byte)((remoteBitfield[i] >> (7 - j)) & mask);
                     
-                                                    if (myBit == inBit) {
-                                                        continue;
-                                                    } else if (myBit == 0 && inBit == 1) {
-                                                        if (!getRequests().containsValue((i * 8) + j) && !getPiecesIHave().contains(remotePIdx)) {
-                                                            setOutMessage(new Request((i * 8) + j));
-                                                            setRequests(remotePeerID, (i * 8) + j);
-                                                            System.out.println("Piece: sending request message to " + remotePeerID + " for piece " + ((i * 8) + j));
-                                                            requested = true;
-                                                            break;
-                                                        }
-                                                    }
-                                                }
+                                            //         if (myBit == inBit) {
+                                            //             continue;
+                                            //         } else if (myBit == 0 && inBit == 1) {
+                                            //             if (!getRequests().containsValue((i * 8) + j) && !getPiecesIHave().contains(remotePIdx)) {
+                                            //                 setOutMessage(new Request((i * 8) + j));
+                                            //                 setRequests(remotePeerID, (i * 8) + j);
+                                            //                 System.out.println("Piece: sending request message to " + remotePeerID + " for piece " + ((i * 8) + j));
+                                            //                 requested = true;
+                                            //                 break;
+                                            //             }
+                                            //         }
+                                            //     }
 
-                                                // break out if there has already been a piece requested
-                                                if (requested) {
+                                            //     // break out if there has already been a piece requested
+                                            //     if (requested) {
+                                            //         break;
+                                            //     }
+                                            // }
+
+                                            while(true){
+                                                int ran = (int) (Math.random() * getNumOfPieces());
+                                                if (!getRequests().containsValue(ran) && !getPiecesIHave().contains(ran)) {
+                                                    setOutMessage(new Request(ran));
+                                                    setRequests(remotePeerID, ran);
+                                                    System.out.println("Piece: sending request message to " + remotePeerID + " for piece " + (ran));
                                                     break;
                                                 }
                                             }
@@ -1104,7 +1131,7 @@ public class peerProcess {
             // calculate rates
             for (RemotePeerInfo p : peers.values()){
                 int numPieces = getPeerPieceData().get(p.getPeerID());
-                double rate = (double)numPieces / unchokingInterval;
+                double rate = (double)numPieces / getUnchokingInterval();
                 if (p.getPeerID()!=peerID)
                     rates.put(p.getPeerID(), rate);
             }
@@ -1283,12 +1310,12 @@ public class peerProcess {
         }
     
         public void run(){
-            for (int pid : isChoke.keySet()){
+            for (int pid : getIsChoke().keySet()){
                 currentlyChoked.add(pid);
             }
     
             if (currentlyChoked.size() != 0){
-                int ran = (int) (Math.random() * isChoke.size());
+                int ran = (int) (Math.random() * getIsChoke().size());
                 Unchoke unchoke = new Unchoke(currentlyChoked.get(ran));
                 setMessagesToSend(currentlyChoked.get(ran), unchoke);
                 setCurrentOptUnchoked(currentlyChoked.get(ran));
