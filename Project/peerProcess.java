@@ -49,6 +49,7 @@ public class peerProcess {
     private static Timer timer = new Timer();
     private static Timer timer2 = new Timer();
     private File byteFile;
+    private boolean haveFile = false;
 
     public peerProcess(int pID) {
         peerID = pID;
@@ -1030,7 +1031,21 @@ public class peerProcess {
                     sendMessage();
 
                     // TODO: add a proper condition here to check that all peers have received all pieces
+                    // checks to see if all peers have downloaded the complete file
                     // setProtocolCompleted(true);
+                    // for (byte[] bf: peersBitfields.values()) {
+                    //     //System.out.println("Entered the loop for checking completed bitfields");
+                    //     for (int i = 0; i < bf.length; i++) {
+                    //         if (bf[i] != fullBitfield[i]) {
+                    //             setProtocolCompleted(false);
+                    //             //System.out.println("There is a peer who has not completed downloading the file");
+                    //         }
+                    //     }
+                    // }
+                    // if (getProtocolCompleted()) {
+                    //     System.out.println("All peers have completed downloading the file");
+                    //     break;
+                    // }
                 }
             }
 
