@@ -16,6 +16,7 @@ public class Message implements Serializable {
     }
 
     public Message(byte type) {
+        mLength = 1;
         mType = type;
     }
 
