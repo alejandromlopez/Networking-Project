@@ -52,6 +52,7 @@ public class peerProcess {
     private int piecesDownloaded;
     private static Timer timer = new Timer();
     private static Timer timer2 = new Timer();
+    private File byteFile;
 
     private boolean haveFile;
 
@@ -128,6 +129,35 @@ public class peerProcess {
                 piece[j] = allFileBytes[(i * pieceSize) + j];
             }
             pieces[i] = piece;
+        }
+    }
+
+    // Take the file of pieces and translate it to original text
+    public void decodeBytes(){
+        // If the file is empty, write to it
+        if (byteFile.length() == 0) {
+            String workingDir = System.getProperty("user.dir");
+            FileWriter writer = null;
+            try {
+                writer = new FileWriter(workingDir + "/peer_" + peerID + "/" + fileName);
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+            
+            for (int i = 0; i < pieces.length; i++) {
+                String text = new String(pieces[i], StandardCharsets.UTF_8);
+                // Checks to see if there are null values
+                if (text.indexOf("") > 0){
+                    text = text.substring(0, text.indexOf(""));
+                }
+                try {
+                    writer.append(text);
+                    writer.flush();
+                    //writer.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -253,6 +283,7 @@ public class peerProcess {
 
                 fullBitfield[i] = (byte) 255;
             }
+            byteFile = new File(workingDir + "/peer_" + peerID + fileName);
         }
 
         Scanner s = null;
@@ -397,7 +428,7 @@ public class peerProcess {
             // inPeerID = rpi.getPeerID();
             // }
             // }
-
+            peerlog.TCPConnectionFrom(inPeerID);
             /*
              * Checks if this peerProcess has already created a socket to this incoming
              * message If it hasn't, then creates a socket with this connection, places it
@@ -806,6 +837,7 @@ public class peerProcess {
                                         newRemoteBitfield[haveIndexByte] = newByte;
                                         setPeersBitfields(remotePeerID, newRemoteBitfield);
 
+                                        peerlog.receivingHave(remotePeerID, haveIndex);
                                         break;
                                     // Received bitfield message
                                     case 5:
