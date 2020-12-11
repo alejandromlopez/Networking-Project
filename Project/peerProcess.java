@@ -28,12 +28,15 @@ public class peerProcess {
     private int fileSize;
     private int pieceSize;
     private int numOfPieces;
-    private static byte[] bitfield;
+    private byte[] bitfield;
     private boolean protocolCompleted = false;
-    private static HashMap<Integer, Socket> sockets = new HashMap<Integer, Socket>();
-    private static HashMap<Integer, RemotePeerInfo> peers = new HashMap<Integer, RemotePeerInfo>();
+    private HashMap<Integer, Socket> sockets = new HashMap<Integer, Socket>();
+    private HashMap<Integer, RemotePeerInfo> peers = new HashMap<Integer, RemotePeerInfo>();
     private static HashMap<Integer, Thread> threads = new HashMap<Integer, Thread>();
-    private static HashMap<Integer, String> neighbors = new HashMap<Integer, String>();
+    private HashMap<Integer, String> neighbors = new HashMap<Integer, String>();
+    private HashMap<Integer, byte[]> peersBitfields = new HashMap<Integer, byte[]>();
+    private Set<Integer> requests = new HashSet<Integer>();
+    private byte[][] pieces;
     private EventLog peerlog;
 
     private byte[] fullBitfield;
@@ -43,11 +46,8 @@ public class peerProcess {
     private static boolean areLeftovers;
     private boolean tester;
     private static HashMap<Integer, Integer> pieceData = new HashMap<Integer, Integer>();
-    private HashMap<Integer, byte[]> peersBitfields = new HashMap<Integer, byte[]>();
     private static HashMap<Integer, Boolean> peersInterestedInMe = new HashMap<Integer, Boolean>();
     private static HashMap<Integer, Boolean> isChoke = new HashMap<Integer, Boolean>();
-    private Set<Integer> requests = new HashSet<Integer>();
-    private byte[][] pieces;
     private Timer timer = new Timer();
     private Timer timer2 = new Timer();
 
@@ -402,28 +402,36 @@ public class peerProcess {
         return bfield;
     }
 
-    public synchronized HashMap<Integer, Socket> getSockets() {
+    private synchronized HashMap<Integer, Socket> getSockets() {
         return sockets;
     }
 
-    public synchronized byte[] getBitField() {
+    private synchronized byte[] getBitField() {
         return bitfield;
     }
 
-    public synchronized HashMap<Integer, Integer> getPieceData() {
+    private synchronized HashMap<Integer, Integer> getPieceData() {
         return pieceData;
     }
 
-    public synchronized void setPieceData(HashMap<Integer, Integer> p) {
+    private synchronized void setPieceData(HashMap<Integer, Integer> p) {
         pieceData = p;
     }
 
-    public synchronized byte[] getPeersBitfields(int remotePID) {
+    private synchronized byte[] getPeersBitfields(int remotePID) {
         return peersBitfields.get(remotePID);
     }
 
-    public synchronized void setPeersBitfields(int remotePID, byte[] newBitfield) {
+    private synchronized void setPeersBitfields(int remotePID, byte[] newBitfield) {
         peersBitfields.put(remotePID, newBitfield);
+    }
+
+    private synchronized byte[][] getPieces() {
+        return pieces;
+    }
+
+    private synchronized void setPieces(int pIdx, byte[] p) {
+        pieces[pIdx] = p;
     }
 
     private synchronized boolean getProtocolCompleted() {
@@ -500,17 +508,17 @@ public class peerProcess {
         private int remotePeerID;
         private RemotePeerInfo remotePeer;
         private Message outMessage;
-        private Message inMessage;
         private byte[] inMessageBytes;
         private boolean receivedHandshake;
         private boolean sendHandshake = true;
         private byte[] remoteBitfield = new byte[bitfield.length];
+        private boolean interested;
 
         private boolean finish;
         private boolean handshakeDone;
         private boolean bitFieldSent;
         private peerProcess pp;
-        private HashMap<Integer, Boolean> isChockedBy = new HashMap<Integer, Boolean>();
+        private HashMap<Integer, Boolean> isChokedBy = new HashMap<Integer, Boolean>();
         private HashMap<Integer, Boolean> containsInterestingPieces = new HashMap<Integer, Boolean>();
 
         public Handler(RemotePeerInfo remoteP, boolean rcvdHandshake) {
@@ -898,6 +906,7 @@ public class peerProcess {
                                 byte[] lenBuf = new byte[4];
                                 in.read(lenBuf, 0, 4);
                                 int length = ByteBuffer.wrap(lenBuf).getInt();
+                                System.out.println("Finished ");
 
                                 // extracts the message type of the incoming message
                                 byte[] messageTypeBuf = new byte[1];
@@ -996,6 +1005,10 @@ public class peerProcess {
                                         break;
                                     // Received request message
                                     case 6:
+                                        // extracts the piece index that was requested from the remote peer
+                                        int remotePieceIdx = ByteBuffer.wrap(payload).getInt();
+
+                                        setOutMessage(new Piece(remotePieceIdx, pieces[remotePieceIdx]));
                                         break;
                                     // Received piece message
                                     case 7:
@@ -1004,18 +1017,55 @@ public class peerProcess {
                                          * Whenever a peer receives a piece completely, it checks the bitfields of its neighbors 
                                          * and decides whether it should send ‘not interested’ messages to some neighbors.
                                          */
+
+                                        // TODO: add condition for && remote peer has interesting pieces
+                                        if (!getIsChokedBy(remotePeerID)) {
+                                            byte[] remotePieceIdxBytes = new byte[4];
+                                            byte[] remotePieceBytes = new byte[pieceSize];
+                                            for (int i = 0; i < length - 1; i++) {
+                                                if (i < 4) {
+                                                    remotePieceIdxBytes[i] = payload[i];
+                                                } else {
+                                                    remotePieceBytes[i - 4] = payload[i];
+                                                }
+                                            }
+
+                                            int remotePIdx = ByteBuffer.wrap(remotePieceIdxBytes).getInt();
+                                            setPieces(remotePIdx, remotePieceBytes);
+
+                                            // checks to see if the remote peer has any pieces that are interesting
+                                            // if so, then send out a request message
+                                            boolean requested = false;
+                                            for (int i = 0; i < remoteBitfield.length; i++) {
+                                                // compares each bit in this peer's bitfield with each bit in the remote peer's bitfield
+                                                byte mask = 1;
+                    
+                                                for (int j = 0; j < 8; j++) {
+                                                    byte myBit = (byte)((bitfield[i] >> (7 - j)) & mask);
+                                                    byte inBit = (byte)((remoteBitfield[i] >> (7 - j)) & mask);
+                    
+                                                    if (myBit == inBit) {
+                                                        continue;
+                                                    } else if (myBit == 0 && inBit == 1) {
+                                                        setOutMessage(new Request((i * 8) + j));
+                                                        System.out.println("Piece: sending request message to " + remotePeerID);
+                                                        requested = true;
+                                                        break;
+                                                    }
+                                                }
+
+                                                // break out if there has already been a piece requested
+                                                if (requested) {
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        
                                         break;
                                     default:
                                         System.out.println("Received an unknown message type");
                                         break;
                                 }
-
-                                //Choke
-                                // if (messageType[0] == (byte) 0) {
-                                //     isChockedBy.put(remotePeerID, true);
-                                //     peerlog.choking(remotePeerID);
-                                // }
-
                             }
                         } 
                     } catch (IOException e) {

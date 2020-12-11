@@ -1,6 +1,4 @@
-import java.io.Serializable;
-
-public class HandshakeMessage implements Serializable {
+public class HandshakeMessage {
     private final String handshakeHeader = "P2PFILESHARINGPROJ";
     private String zeroBits = "0000000000";
     private final int peerID;

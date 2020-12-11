@@ -1,43 +1,23 @@
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class Piece extends Message {
-
-    private int peerID;
-    private int pieceID;
+    private int pieceIdx;
     private byte[] piece;
 
-    public Piece(byte[] piecePayload, int pid, int piecID) 
-    {
-        super((byte) 7, piecePayload);
-        peerID=pid;
-        pieceID=piecID;
-    }
-
-    public Piece(int pieceID, byte[] pieceIDIdx, int pid) 
-    {
-        super((byte) 7, AllForOne(pieceID, pieceIDIdx));
-        peerID=pid;
-    }
-
-    public Piece(byte[] pieceIDIdx, byte[] piec, int pid, int piecID){
-        super((byte)7, AllForOne(piecID, pieceIDIdx));
-        peerID = pid;
-        pieceID = piecID;
-        piece = piec;
+    public Piece(int pIdx, byte[] pieceContents) {
+        super((byte)7, AllForOne(pIdx, pieceContents));
+        pieceIdx = pIdx;
+        piece = pieceContents;
     }
 
     //Used to concatenate the pieceID with toBeAdded to create the piece payload.
-    private static byte[] AllForOne(int pID, byte[] toBeAdded)
-    {
+    private static byte[] AllForOne(int pID, byte[] toBeAdded) {
         int len;
-        if (toBeAdded != null)
-        {
+        if (toBeAdded != null) {
             len = toBeAdded.length;
         } 
-        else
-        {
+        else {
             len = 0;
         }
         byte[] temp = new byte[4 + len];
@@ -45,13 +25,9 @@ public class Piece extends Message {
         System.arraycopy(toBeAdded, 0, temp, 4, toBeAdded.length);
         return temp;
     }
-    
-    public int getPID(){
-        return peerID;
-    }
 
-    public int getPieceID(){
-        return pieceID;
+    public int getPieceIdx(){
+        return pieceIdx;
     }
 
     public byte[] getPiece(){
