@@ -44,6 +44,7 @@ public class peerProcess {
     private static HashMap<Integer, Boolean> isChoke = new HashMap<Integer, Boolean>();
     private HashMap<Integer, Integer> requests = new HashMap<Integer, Integer>();
     private Set<Integer> piecesIHave = new HashSet<Integer>();
+    private ArrayList<Integer> piecesINeed = new ArrayList<Integer>();
     private byte[][] pieces;
     private int piecesDownloaded;
     private static Timer timer = new Timer();
@@ -312,6 +313,9 @@ public class peerProcess {
             areLeftovers = true;
             numLeftover = a;
         }
+
+        for(int i = 0; i < numOfPieces; i++)
+            piecesINeed.add(i);
     }
 
     // Establishes sockets with all other remote machines and spawns Handler threads for each
@@ -562,7 +566,13 @@ public class peerProcess {
         return optimisticUnchokingInterval;
     }
 
+    public synchronized ArrayList<Integer> getPiecesINeed(){
+        return piecesINeed;
+    }
 
+    public synchronized void setPiecesINeed(int id){
+        piecesINeed.remove(id);
+    }
 
     // Starts up the peerProcess and begins message delivery
     public static void main(String[] args) {
@@ -924,6 +934,13 @@ public class peerProcess {
                                                 peerlog.downloadingAPiece(remotePeerID, remotePIdx, getPiecesDownloaded());
                                                 System.out.println("Our total number of pieces is " + getPiecesDownloaded());
 
+                                                for (int i = 0; i < getPiecesINeed().size(); i++){
+                                                    if (getPiecesINeed().get(i)==remotePIdx){
+                                                        setPiecesINeed(i);
+                                                        break;
+                                                    }
+                                                }
+
                                                 // sends out a Have message to all remote peers
                                                 for (int key: peers.keySet()) {
                                                     if (key == peerID) {
@@ -964,13 +981,19 @@ public class peerProcess {
                                             //         break;
                                             //     }
                                             // }
-
+                                            int count = 0;
                                             while(true){
-                                                int ran = (int) (Math.random() * getNumOfPieces());
-                                                if (!getRequests().containsValue(ran) && !getPiecesIHave().contains(ran)) {
-                                                    setOutMessage(new Request(ran));
-                                                    setRequests(remotePeerID, ran);
-                                                    System.out.println("Piece: sending request message to " + remotePeerID + " for piece " + (ran));
+                                                int ran = (int) (Math.random() * getPiecesINeed().size());
+                                                int pieceNeeded = getPiecesINeed().get(ran);
+                                                if (count > 5000){
+                                                    getRequests().clear();
+                                                }
+                                                count++;
+                                                if (!getRequests().containsValue(pieceNeeded) && !getPiecesIHave().contains(pieceNeeded)) {
+                                                    setOutMessage(new Request(pieceNeeded));
+                                                    setRequests(remotePeerID, pieceNeeded);
+                                                    //setPiecesINeed(ran);
+                                                    System.out.println("Piece: sending request message to " + remotePeerID + " for piece " + (pieceNeeded));
                                                     break;
                                                 }
                                             }
