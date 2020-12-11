@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.lang.Math;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -28,28 +29,28 @@ public class peerProcess {
     private int fileSize;
     private int pieceSize;
     private int numOfPieces;
-    private byte[] bitfield;
+    private static byte[] bitfield;
     private boolean protocolCompleted = false;
     private HashMap<Integer, Socket> sockets = new HashMap<Integer, Socket>();
-    private HashMap<Integer, RemotePeerInfo> peers = new HashMap<Integer, RemotePeerInfo>();
+    private static HashMap<Integer, RemotePeerInfo> peers = new HashMap<Integer, RemotePeerInfo>();
     private static HashMap<Integer, Thread> threads = new HashMap<Integer, Thread>();
-    private HashMap<Integer, String> neighbors = new HashMap<Integer, String>();
-    private HashMap<Integer, byte[]> peersBitfields = new HashMap<Integer, byte[]>();
-    private Set<Integer> requests = new HashSet<Integer>();
-    private byte[][] pieces;
-    private EventLog peerlog;
-
-    private byte[] fullBitfield;
-    private boolean haveFile;
-    private int bitfieldSize;
+    private static HashMap<Integer, String> neighbors = new HashMap<Integer, String>();
+    private static HashMap<Integer, Message> messagesToSend = new HashMap<Integer, Message>();
+    private static EventLog peerlog;
     private static int numLeftover;
     private static boolean areLeftovers;
-    private boolean tester;
+    private int bitfieldSize;
+    private byte[] fullBitfield;
     private static HashMap<Integer, Integer> pieceData = new HashMap<Integer, Integer>();
+    private static HashMap<Integer, byte[]> peersBitfields = new HashMap<Integer, byte[]>();
     private static HashMap<Integer, Boolean> peersInterestedInMe = new HashMap<Integer, Boolean>();
     private static HashMap<Integer, Boolean> isChoke = new HashMap<Integer, Boolean>();
-    private Timer timer = new Timer();
-    private Timer timer2 = new Timer();
+    private Set<Integer> requests = new HashSet<Integer>();
+    private byte[][] pieces;
+    private static Timer timer = new Timer();
+    private static Timer timer2 = new Timer();
+
+    private boolean haveFile;
 
     public peerProcess(int pID) {
         peerID = pID;
@@ -402,27 +403,27 @@ public class peerProcess {
         return bfield;
     }
 
-    private synchronized HashMap<Integer, Socket> getSockets() {
+    public synchronized HashMap<Integer, Socket> getSockets() {
         return sockets;
     }
 
-    private synchronized byte[] getBitField() {
+    public static synchronized byte[] getBitField() {
         return bitfield;
     }
 
-    private synchronized HashMap<Integer, Integer> getPieceData() {
+    public static synchronized HashMap<Integer, Integer> getPieceData() {
         return pieceData;
     }
 
-    private synchronized void setPieceData(HashMap<Integer, Integer> p) {
+    public static synchronized void setPieceData(HashMap<Integer, Integer> p) {
         pieceData = p;
     }
 
-    private synchronized byte[] getPeersBitfields(int remotePID) {
+    public static synchronized byte[] getPeersBitfields(int remotePID) {
         return peersBitfields.get(remotePID);
     }
 
-    private synchronized void setPeersBitfields(int remotePID, byte[] newBitfield) {
+    public static synchronized void setPeersBitfields(int remotePID, byte[] newBitfield) {
         peersBitfields.put(remotePID, newBitfield);
     }
 
@@ -442,27 +443,39 @@ public class peerProcess {
         protocolCompleted = state;
     }
 
-    public boolean getTester() {
-        return tester;
+    private static synchronized HashMap<Integer, Message> getMessagesToSend(){
+        return messagesToSend;
     }
 
-    public HashMap<Integer, Boolean> getPeersInterestedInMe() {
+    private static synchronized void setMessagesToSend(int rPID, Message message){
+        messagesToSend.put(rPID, message);
+    }
+
+    public static synchronized HashMap<Integer, Boolean> getPeersInterestedInMe() {
         return peersInterestedInMe;
     }
 
-    public int getCurrentOptUnchoked() {
+    public static synchronized int getCurrentOptUnchoked() {
         return currentOptUnchoked;
     }
-    public void setInterestedInMe(HashMap<Integer, Boolean> i) {
+    public static synchronized void setInterestedInMe(HashMap<Integer, Boolean> i) {
         peersInterestedInMe = i;
     }
 
-    public void setCurrentOptUnchoked(int pid) {
+    public static synchronized void setCurrentOptUnchoked(int pid) {
         currentOptUnchoked = pid;
     }
 
-    public void setIsChoke(HashMap<Integer, Boolean> choking) {
+    public static synchronized void setIsChoke(HashMap<Integer, Boolean> choking) {
         isChoke = choking;
+    }
+
+    public synchronized void setRequests(int pieceID){
+        requests.add(pieceID);
+    }
+
+    public synchronized Set<Integer> getRequests(){
+        return requests;
     }
 
     // Starts up the peerProcess and begins message delivery
@@ -471,6 +484,9 @@ public class peerProcess {
 
         // create sockets with all peers that came before us
         pp.establishConnections();
+
+        timer.schedule(new newNeighbors(), 0, unchokingInterval * 1000);
+        timer2.schedule(new Optimistically(), 0, optimisticUnchokingInterval*1000);
 
         System.out.println("About to end peerProcess");
         for (Thread thread: threads.values()) {
@@ -552,9 +568,13 @@ public class peerProcess {
             Thread rThread = new Thread(reader);
             rThread.start();
 
+
+
             try {
                 rThread.join();
                 wThread.join();
+                timer.cancel();
+                timer2.cancel();
                 System.out.println("Reader and Writer for " + remotePeerID + " have ended");
             } catch (InterruptedException e1) {
                 e1.printStackTrace();
@@ -844,10 +864,10 @@ public class peerProcess {
                 //     }
                 // }
 
-                // if (allDone && areEqual) {
-                //     System.out.println("should quit");
-                //     timer.cancel();
-                //     timer2.cancel();
+                // if (allDone && areEqual) { //////////////////////////////////////////////////////////////////////////////////////
+                //     System.out.println("should quit");///////////////////////////////////////////////////////////////////////////
+                //     timer.cancel();/////////////////////NEED THIS TO STOP THE CHOKING AND UNCHOKING INTERVALS////////////////////
+                //     timer2.cancel();/////////////////////////////////////////////////////////////////////////////////////////////
                 //     break;
                 // }
                 // for (byte b : bitField) {
@@ -875,15 +895,23 @@ public class peerProcess {
             outMessage = m;
         }
 
-        public TimerTask prefNeighbors() {
-            TimerTask a = new TimerTask() {
-                public void run() {
-                    new newNeighbors(numPreferredNeighbors, unchokingInterval, peers, bitfield, peerID, areLeftovers,
-                            numLeftover, pp, peerlog);
-                }
-            };
-            return a;
+        private synchronized HashMap<Integer, Boolean> getIsChokedBy(){
+            return isChokedBy;
         }
+
+        public synchronized void setIsChokedBy(int pid, boolean status){
+            isChokedBy.put(pid, status);
+        }
+
+        public synchronized HashMap<Integer, Boolean> getContainsInterestingPieces(){
+            return containsInterestingPieces;
+        }
+
+        public synchronized void setContainsInterestingPieces(int pid, boolean does){
+            containsInterestingPieces.put(pid, does);
+        }
+
+
         
         public class Reader implements Runnable {
             public Reader() {
@@ -931,15 +959,49 @@ public class peerProcess {
                                 switch (messageType) {
                                     // Received choke message
                                     case 0:
+                                        setIsChokedBy(remotePeerID, true);
+                                        peerlog.choking(remotePeerID);
                                         break;
                                     // Received unchoke message
                                     case 1:
+                                        //inBitfield = peersBitfields.get(remotePeerID);
+                                        setIsChokedBy(remotePeerID, false);
+                                        peerlog.unchoking(remotePeerID);
+                
+                                        for (int i = 0; i < bitfield.length; i++) {
+                                            byte mask = 1;
+                                            for (int j = 0; j < 8; j++) {
+                                                byte myBit = (byte) ((bitfield[i] >> (7 - j)) & mask);
+                                                byte inBit = (byte) ((remoteBitfield[i] >> (7 - j)) & mask);
+                
+                                                if (myBit == inBit) {
+                                                    continue;
+                                                } else if (myBit == 0 && inBit == 1) {
+                                                    int pieceIdx = (8 * i) + j;
+                
+                                                    if (!getRequests().contains(pieceIdx)) {
+                                                        //TODO: Make Selection Random
+                                                        if (getIsChokedBy().get(remotePeerID) || !getContainsInterestingPieces().get(remotePeerID)) {
+                                                            continue;
+                                                        }
+                                                        getRequests().add(pieceIdx);
+                                                        setOutMessage(new Request(pieceIdx));
+                                                        System.out.println("Sent request from an unchoke method");
+                                                    }
+                                                }
+                                            }
+                
+                                        }
                                         break;
                                     // Received interested message
                                     case 2:
+                                        peersInterestedInMe.put(remotePeerID, true);
+                                        peerlog.receivingInterested(remotePeerID);
                                         break;
                                     // Received not interested message
                                     case 3:
+                                        peersInterestedInMe.remove(remotePeerID);
+                                        peerlog.receivingNotInterested(remotePeerID);
                                         break;
                                     // Received have message
                                     case 4:
@@ -1019,7 +1081,7 @@ public class peerProcess {
                                          */
 
                                         // TODO: add condition for && remote peer has interesting pieces
-                                        if (!getIsChokedBy(remotePeerID)) {
+                                        if (!getIsChokedBy().get(remotePeerID)) {
                                             byte[] remotePieceIdxBytes = new byte[4];
                                             byte[] remotePieceBytes = new byte[pieceSize];
                                             for (int i = 0; i < length - 1; i++) {
@@ -1131,6 +1193,10 @@ public class peerProcess {
                 System.out.println("Bitfield message sent to " + remotePeerID);
 
                 while (!getProtocolCompleted()) {
+                    if (messagesToSend.containsKey(remotePeerID)){
+                        setOutMessage(getMessagesToSend().get(remotePeerID));
+                    }
+
                     // spins until there is a message to send out
                     while (getOutMessage() == null) {
                     }
@@ -1213,6 +1279,226 @@ public class peerProcess {
                     e.printStackTrace();
                 }
             } 
+        }
+    }
+
+    public static class newNeighbors extends TimerTask {
+        private HashMap<Integer, Double> rates = new HashMap<Integer, Double>();
+        private HashMap<Integer, Double> hrates = new HashMap<Integer, Double>();
+        private HashMap<Integer, Boolean> isChoked2 = new HashMap<Integer, Boolean>();
+        private boolean complete;
+        private int[] highPeers;
+        private double[] highRates;
+        private ArrayList<Integer> newPrefNeighbor;
+    
+        public newNeighbors() {
+            highPeers = new int[numPreferredNeighbors];
+            highRates = new double[numPreferredNeighbors];
+            newPrefNeighbor  = new ArrayList<Integer>();
+        }
+    
+        
+    
+        public void run(){
+            //Calc rates
+            for (RemotePeerInfo p : peers.values()){
+                int numPieces = getPieceData().get(p.getPeerID());
+                double rate = (double)numPieces / unchokingInterval;
+                if (p.getPeerID()!=peerID)
+                    rates.put(p.getPeerID(), rate);
+            }
+    
+            //Used to assign complete.
+            for (int i = 0; i < getBitField().length; i++){
+                complete = true;
+                if (areLeftovers){
+                    int byteNum = 0;
+                    for (int j = 1; j <= numLeftover; j++) {
+                        byteNum += (int) Math.pow(2, 8 - j);
+                    }
+                    if (i < getBitField().length-1){
+                        if (getBitField()[i]==((byte)-1)){
+                            continue;
+                        } else {
+                            complete = false;
+                            break;
+                        }
+                    } else {
+                        if (getBitField()[i]==((byte)byteNum) || getBitField()[i] == ((byte)-1)){
+                            continue;
+                        } else {
+                            complete = false;
+                            break;
+                        }
+                    }
+                } else {
+                    if (getBitField()[i]==((byte)-1)){
+                        continue;
+                    } else {
+                        complete = false;
+                        break;
+                    }
+                }
+            }
+            System.out.println("");
+    
+            if (!complete){
+                //Compute neighbors by download rate.
+                System.out.println("Computing new neighbors when I don't have the complete file.");
+                for(int p : rates.keySet()){
+                    boolean notinputed = true;
+                    for (int i = 0; i < highRates.length; i++){
+                        if(rates.get(p)>highRates[i] && getPeersInterestedInMe().get(p)){
+                            for (int j = i; j < highRates.length-1; i++){
+                                highRates[j+1] = highRates[j];
+                                highPeers[j+1] = highPeers[j];
+                            }
+                            highRates[i] = rates.get(p);
+                            highPeers[i] = p;
+                            break;
+                        } else if(rates.get(p)==highRates[i] && rates.get(p) == 0  && highPeers[i] == 0 && notinputed){
+                            //highRates[i] = rates.get(p);
+                            highPeers[i] = p;
+                            notinputed = false;
+                        } else if (rates.get(p)==highRates[i] && i == (highRates.length-1) && getPeersInterestedInMe().get(p)){
+                            double a = Math.random();
+                            if (a > 0.5){
+                                highRates[i] = rates.get(p);
+                                highPeers[i] = p;
+                            }
+                        }
+                        
+                    }
+                }
+                System.out.println("Assign hrates to the peers with the highest rates");
+                for (int i = 0; i < highRates.length; i++){
+                    hrates.put(highPeers[i], highRates[i]);
+                }
+    
+                // System.out.print("HighPeers has ");
+                // for (int i = 0; i < highPeers.length; i ++){
+                //     System.out.print(highPeers[i] + " ");
+                // }
+                
+                for (int i = 0; i < highRates.length; i++){
+                    newPrefNeighbor.add(highPeers[i]);
+                    Unchoke unchoke = new Unchoke(peerID);
+                    setMessagesToSend(highPeers[i], unchoke);
+                    System.out.println("Sent unchoke to " + highPeers[i] + "when file is incomplete");
+                }
+                // System.out.print("newPrefNeighbor has ");
+                // for (int i = 0; i < newPrefNeighbor.size(); i ++){
+                //     System.out.print(newPrefNeighbor.get(i) + " ");
+                // }
+                peerlog.changeOfPrefNeighbor(newPrefNeighbor);
+                newPrefNeighbor = new ArrayList<Integer>();
+                highPeers = new int[numPreferredNeighbors];
+                highRates = new double[numPreferredNeighbors];
+    
+    
+                for (int p : peers.keySet()){
+                    if ((hrates.containsKey(p) || getCurrentOptUnchoked() == p) || p == peerID){
+                        continue;
+                    }
+                    Choke choke = new Choke(peerID);
+                    setMessagesToSend(p, choke);
+                    isChoked2.put(p, true);
+                    System.out.println("Sent choke to " + p + "when file is incomplete");
+                }
+    
+            } else {
+                //Compute neighbors randomly.
+    
+                System.out.println("I MADE IT TO THE RANDOM PEER SELECTION");
+                HashMap<Integer, Integer> sentAlready = new HashMap<Integer, Integer>();
+                int[] peerIDInInterested = new int[getPeersInterestedInMe().size()];
+                int idx = 0;
+                for(int p : getPeersInterestedInMe().keySet()){
+                    peerIDInInterested[idx] = p;
+                    idx++;
+                }
+                System.out.println(peerIDInInterested.length);
+    
+                for (int i = 0; i < numPreferredNeighbors; i++){
+                    while(true){
+                        int ran = (int) (Math.random()*peerIDInInterested.length);
+                        
+                        if(!sentAlready.containsKey(peerIDInInterested[ran])){
+                            System.out.println("MADE IT INSIDE unchoking in random assignment");
+                            newPrefNeighbor.add(peerIDInInterested[ran]);
+                            Unchoke unchoke = new Unchoke(peerID);
+                            setMessagesToSend(peerIDInInterested[ran], unchoke);
+                            sentAlready.put(peerIDInInterested[ran], 0);
+                            System.out.println("Sent unchoke in random peer selection to " + peerIDInInterested[ran]);
+                            break;
+                        }
+    
+                    }
+                }
+                peerlog.changeOfPrefNeighbor(newPrefNeighbor);
+                newPrefNeighbor = new ArrayList<Integer>();
+    
+                int[] notSent = new int[getPeersInterestedInMe().size() - sentAlready.size()];
+                int count=0;
+                System.out.println("notSent size is: " + notSent.length);
+                System.out.println("interestedInMe size is: " + getPeersInterestedInMe().size());
+    
+                for (int p : getPeersInterestedInMe().keySet()){
+                    System.out.println("count is: " + count);
+                    if (!sentAlready.containsKey(p) && getCurrentOptUnchoked() != p){
+                        notSent[count]=p;
+                        count++;
+                    }
+                }
+    
+                for (int i = 0; i < notSent.length; i++){
+                    if (notSent[i]==0){
+                        continue;
+                    }
+                    Choke choke = new Choke(peerID);
+                    setMessagesToSend(notSent[i], choke);
+                    isChoked2.put(notSent[i], true);
+                    System.out.println("Sent choke message at the end of random selection of peers to " + notSent[i]);
+                }
+            }
+    
+            
+    
+            //Reset Interests
+            HashMap<Integer, Boolean> reset = new HashMap<Integer, Boolean>();
+            for (int p : getPeersInterestedInMe().keySet()){
+                reset.put(p, false);
+            }
+            //pp.setInterestedInMe(reset);
+            setIsChoke(isChoked2);
+        }
+        
+    }
+
+    public static class Optimistically extends TimerTask{
+    
+        private ArrayList<Integer> currentlyChoked = new ArrayList<Integer>();
+        
+        
+        public Optimistically(){
+
+        }
+    
+        public void run(){
+            for (int pid : isChoke.keySet()){
+                currentlyChoked.add(pid);
+            }
+    
+            if (currentlyChoked.size() != 0){
+                int ran = (int) (Math.random() * isChoke.size());
+                Unchoke unchoke = new Unchoke(currentlyChoked.get(ran));
+                setMessagesToSend(currentlyChoked.get(ran), unchoke);
+                setCurrentOptUnchoked(currentlyChoked.get(ran));
+                peerlog.changeOfOptUnchkNeighbor(currentlyChoked.get(ran));
+
+                System.out.println("Sent unchoke from Optimistically to unchoke " + currentlyChoked.get(ran));
+                currentlyChoked = new ArrayList<Integer>();
+            }
         }
     }
 }
