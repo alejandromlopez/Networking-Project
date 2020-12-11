@@ -443,23 +443,31 @@ public class peerProcess {
         messagesToSend.put(rPID, message);
     }
 
-    public static HashMap<Integer, Boolean> getPeersInterestedInMe() {
+    public static synchronized HashMap<Integer, Boolean> getPeersInterestedInMe() {
         return peersInterestedInMe;
     }
 
-    public static int getCurrentOptUnchoked() {
+    public static synchronized int getCurrentOptUnchoked() {
         return currentOptUnchoked;
     }
-    public static void setInterestedInMe(HashMap<Integer, Boolean> i) {
+    public static synchronized void setInterestedInMe(HashMap<Integer, Boolean> i) {
         peersInterestedInMe = i;
     }
 
-    public static void setCurrentOptUnchoked(int pid) {
+    public static synchronized void setCurrentOptUnchoked(int pid) {
         currentOptUnchoked = pid;
     }
 
-    public static void setIsChoke(HashMap<Integer, Boolean> choking) {
+    public static synchronized void setIsChoke(HashMap<Integer, Boolean> choking) {
         isChoke = choking;
+    }
+
+    public synchronized void setRequests(int pieceID){
+        requests.add(pieceID);
+    }
+
+    public synchronized Set<Integer> getRequests(){
+        return requests;
     }
 
     // Starts up the peerProcess and begins message delivery
@@ -518,7 +526,7 @@ public class peerProcess {
         private boolean handshakeDone;
         private boolean bitFieldSent;
         private peerProcess pp;
-        private HashMap<Integer, Boolean> isChockedBy = new HashMap<Integer, Boolean>();
+        private HashMap<Integer, Boolean> isChokedBy = new HashMap<Integer, Boolean>();
         private HashMap<Integer, Boolean> containsInterestingPieces = new HashMap<Integer, Boolean>();
 
         public Handler(RemotePeerInfo remoteP, boolean rcvdHandshake) {
@@ -878,6 +886,24 @@ public class peerProcess {
         private synchronized void setOutMessage(Message m) {
             outMessage = m;
         }
+
+        private synchronized HashMap<Integer, Boolean> getIsChokedBy(){
+            return isChokedBy;
+        }
+
+        public synchronized void setIsChokedBy(int pid, boolean status){
+            isChokedBy.put(pid, status);
+        }
+
+        public synchronized HashMap<Integer, Boolean> getContainsInterestingPieces(){
+            return containsInterestingPieces;
+        }
+
+        public synchronized void setContainsInterestingPieces(int pid, boolean does){
+            containsInterestingPieces.put(pid, does);
+        }
+
+
         
         public class Reader implements Runnable {
             public Reader() {
@@ -924,13 +950,13 @@ public class peerProcess {
                                 switch (messageType) {
                                     // Received choke message
                                     case 0:
-                                        isChockedBy.put(remotePeerID, true);
+                                        setIsChokedBy(remotePeerID, true);
                                         peerlog.choking(remotePeerID);
                                         break;
                                     // Received unchoke message
                                     case 1:
                                         //inBitfield = peersBitfields.get(remotePeerID);
-                                        isChockedBy.put(remotePeerID, false);
+                                        setIsChokedBy(remotePeerID, false);
                                         peerlog.unchoking(remotePeerID);
                 
                                         for (int i = 0; i < bitfield.length; i++) {
@@ -944,9 +970,12 @@ public class peerProcess {
                                                 } else if (myBit == 0 && inBit == 1) {
                                                     int pieceIdx = (8 * i) + j;
                 
-                                                    if (!requests.contains(pieceIdx)) {
+                                                    if (!getRequests().contains(pieceIdx)) {
                                                         //TODO: Make Selection Random
-                                                        requests.add(pieceIdx);
+                                                        if (getIsChokedBy().get(remotePeerID) || !getContainsInterestingPieces().get(remotePeerID)) {
+                                                            continue;
+                                                        }
+                                                        getRequests().add(pieceIdx);
                                                         setOutMessage(new Request(bitfield, pieceIdx, peerID));
                                                         System.out.println("Sent request from an unchoke method");
                                                     }
@@ -1200,7 +1229,7 @@ public class peerProcess {
     public static class newNeighbors extends TimerTask {
         private HashMap<Integer, Double> rates = new HashMap<Integer, Double>();
         private HashMap<Integer, Double> hrates = new HashMap<Integer, Double>();
-        private HashMap<Integer, Boolean> isChoked = new HashMap<Integer, Boolean>();
+        private HashMap<Integer, Boolean> isChoked2 = new HashMap<Integer, Boolean>();
         private boolean complete;
         private int[] highPeers;
         private double[] highRates;
@@ -1317,7 +1346,7 @@ public class peerProcess {
                     }
                     Choke choke = new Choke(peerID);
                     setMessagesToSend(p, choke);
-                    isChoked.put(p, true);
+                    isChoked2.put(p, true);
                     System.out.println("Sent choke to " + p + "when file is incomplete");
                 }
     
@@ -1372,7 +1401,7 @@ public class peerProcess {
                     }
                     Choke choke = new Choke(peerID);
                     setMessagesToSend(notSent[i], choke);
-                    isChoked.put(notSent[i], true);
+                    isChoked2.put(notSent[i], true);
                     System.out.println("Sent choke message at the end of random selection of peers to " + notSent[i]);
                 }
             }
@@ -1385,7 +1414,7 @@ public class peerProcess {
                 reset.put(p, false);
             }
             //pp.setInterestedInMe(reset);
-            setIsChoke(isChoked);
+            setIsChoke(isChoked2);
         }
         
     }
