@@ -10,20 +10,22 @@ on the remote machine. To begin run ./compileJava in the working directory.
 Then you can run java StartRemotePeers.
 
 ## Message Payloads
+Christopher Cooper, Kyle Cheng, Alejandro Lopez
 - [x] choke 
 - [x] unchoke
 - [x] interested
 - [x] not interested
 - [x] have
 - [x] bitfield
-- [x] request (maybe)
-- [x] piece (maybe)
+- [x] request
+- [x] piece
 
 ## Protocols
+Kyle Cheng, Christopher Cooper, Alejandro Lopez
 - [X] handshake and bitfield
 - [X] choke and unchoke
 - [X] interested and not interested
-- [ ] request and piece
+- [X] request and piece
 
 ## Implementation Specifics
 ### Configuration Files
@@ -31,19 +33,23 @@ Then you can run java StartRemotePeers.
 - [x] PeerInfo.cfg
 
 ### Peer Process
+Kyle Cheng, Christopher Cooper, Alejandro Lopez
 - [X] Peer that started should make TCP connections to all peers started before it
-- [ ] When connected to at least one peer, starts to exchange pieces
-- [ ] Peer terminates when it finds out that all peers have downloaded the complete file
+- [X] When connected to at least one peer, starts to exchange pieces
+- [X] Peer terminates when it finds out that all peers have downloaded the complete file
 
 ### Remote Machine 
+Kyle Cheng, Alejandro Lopez
 - [x] Reads file PeerInfo.cfg and starts peers in the file one by one
 - [x] Terminates after starting all peers
 
 ### File Handling
+Alejandro Lopez, Christopher Cooper
 - [x] Should have subdirectories with 'peer_[peerID]'
 - [x] Ensure that peer processes with a complete file actually contain the file before you start them
 
-### Writing Log
+### Writing Log 
+Kyle Cheng, Christopher Cooper
 - [X] TCP Connection
 - [X] Change of preferred neighbors
 - [X] Change of optimistically unchoked neighbor
@@ -52,5 +58,5 @@ Then you can run java StartRemotePeers.
 - [X] Receiving 'have' message
 - [X] Receiving 'interested' message
 - [X] Receiving 'not interested' message
-- [ ] Downloading a piece
+- [X] Downloading a piece
 - [X] Completion of download
