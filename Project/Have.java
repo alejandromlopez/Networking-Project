@@ -1,26 +1,12 @@
-
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 public class Have extends Message {
     private int pieceIdx;
     private byte[] bitfield;
-    private int peerID;
 
-    public Have(byte[] pieceIDIdx, int pieceID, int pid) 
+    public Have(int pIdx) 
     {
-        super((byte) 4, pieceIDIdx);
-        pieceIdx=pieceID;
-        bitfield=pieceIDIdx;
-        peerID=pid;
-    }
-
-    public Have(int pieceID, int pid) 
-    {
-        this(ByteBuffer.allocate(4)
-                       .order(ByteOrder.BIG_ENDIAN)
-                       .putInt(pieceID)
-                       .array(), pieceID, pid);
+        super((byte) 4, ByteBuffer.allocate(4).putInt(pIdx).array());
     }
     
     public int getPieceIdx()
@@ -30,9 +16,5 @@ public class Have extends Message {
 
     public byte[] getBitfield(){
         return bitfield;
-    }
-
-    public int getPID(){
-        return peerID;
     }
 }

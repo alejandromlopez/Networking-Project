@@ -1,10 +1,4 @@
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.Serializable;
-
-public class Message implements Serializable {
+public class Message {
     private int mLength;
     private byte mType;
     private byte[] mPayload;
@@ -16,6 +10,7 @@ public class Message implements Serializable {
     }
 
     public Message(byte type) {
+        mLength = 1;
         mType = type;
     }
 
@@ -41,19 +36,5 @@ public class Message implements Serializable {
 
     public void setMPayload(byte[] pl) {
         this.mPayload = pl;
-    }
-
-    public void read (DataInputStream in) throws IOException {
-        if ((mPayload != null) && (mPayload.length) > 0) {
-            in.readFully(mPayload, 0, mPayload.length);
-        }
-    }
-
-    public void write(DataOutputStream o) throws IOException {
-        o.writeInt (mLength);
-        o.writeByte (mType);
-        if ((mPayload != null) && (mPayload.length > 0)) {
-            o.write (mPayload, 0, mPayload.length);
-        }
     }
 }
