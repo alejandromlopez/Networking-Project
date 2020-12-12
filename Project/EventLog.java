@@ -187,6 +187,57 @@ public class EventLog {
         }
     }
     
+    public void startPeer(){
+        final String msg = getHeader() + " has started.\n";
+        try{
+            logger.write(msg);
+            logger.flush();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void variables(){
+        final String msg = getHeader() + "'s variables have been initialized.\n";
+        try{
+            logger.write(msg);
+            logger.flush();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void receivingHandshake(int peerID){
+        final String msg = getHeader() + " has received a handshake from " + peerID + ".\n";
+        try{
+            logger.write(msg);
+            logger.flush();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void receivingBitfieldMsg(int peerID){
+        final String msg = getHeader() + " has received bitfield message from " + peerID 
+                            + ". Updated " + peerID + " bitfield.\n";
+        try{
+            logger.write(msg);
+            logger.flush();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void receivingRequestMsg(int peerID){
+        final String msg = getHeader() + " has received a request from " + peerID + ".\n";
+        try{
+            logger.write(msg);
+            logger.flush();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
     public void closeLogger(){
         try
         {
